@@ -20,6 +20,8 @@ import {
     Stack,
     Tab,
     Tabs,
+	LinearProgress,
+	Grid,
     Table,
     TableBody,
     TableCell,
@@ -36,7 +38,6 @@ import {
 import MenuItem from '@mui/material/MenuItem'
 // icon imports trimmed to only those used
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
-import { keyframes } from '@mui/material/styles'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
 
@@ -57,7 +58,7 @@ export default function App() {
     const [accounts, setAccounts] = useState<Account[] | null>(null)
 	const [tab, setTab] = useState(0)
     const [accountsSubTab, setAccountsSubTab] = useState(0)
-    const [monthlySavings, setMonthlySavings] = useState(500)
+    
 
 	// Settings state
 	const [clientId, setClientId] = useState('')
@@ -106,32 +107,8 @@ export default function App() {
 	const [simSpeed, setSimSpeed] = useState(1)
 	const [simMonths, setSimMonths] = useState(24)
 	const [simPlaying, setSimPlaying] = useState(true)
-	const [simProgress, setSimProgress] = useState(0)
-	const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; amount?: string; horizon?: string; impact?: string } | null>(null)
-
-	const facts = [
-		{ title: '1,000,000+ downloads', subtitle: 'Trusted worldwide' },
-		{ title: 'Bank‑grade security', subtitle: 'End‑to‑end encryption' },
-		{ title: 'PSD2 compliant', subtitle: 'Open banking ready' },
-		{ title: '$1,200 avg saved/yr', subtitle: 'Smarter decisions' },
-		{ title: '93% satisfaction', subtitle: 'Delighted customers' },
-		{ title: 'Minutes to connect', subtitle: 'Hapoalim supported' }
-	]
-
-	const bubbleStyles = [
-		{ from: '#6EE7F9', to: '#3B82F6' }, // teal → blue
-		{ from: '#FDE68A', to: '#F59E0B' }, // yellow → amber
-		{ from: '#FCA5A5', to: '#EF4444' }, // rose → red
-		{ from: '#C4B5FD', to: '#8B5CF6' }, // purple
-		{ from: '#86EFAC', to: '#22C55E' }, // green
-		{ from: '#FDBA74', to: '#F97316' } // orange
-	]
-
-	const float = keyframes`
-		0% { transform: translateY(0px) }
-		50% { transform: translateY(-8px) }
-		100% { transform: translateY(0px) }
-	`
+const [simProgress, setSimProgress] = useState(0)
+const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; amount?: string; horizon?: string; impact?: string } | null>(null)
 
 
 
@@ -472,8 +449,8 @@ export default function App() {
 				<Tab label="Settings" />
 			</Tabs>
 
-			{/* Global financial snapshot across tabs (demo mode) */}
-			{demoMode && (
+			{/* Global financial snapshot across tabs (demo mode), hidden on Home */}
+			{demoMode && tab !== 0 && (
 				<FinancialSnapshot
 					balances={balancesForSnapshot}
 					savings={demoSavings}
@@ -484,88 +461,285 @@ export default function App() {
 
 			{tab === 0 && (
 				<Box>
-					{/* Hero */}
-					<Box sx={{ mb: 4 }}>
-						<Typography variant="h3" component="h1" sx={{ fontWeight: 700, letterSpacing: 0.5 }}>
-							BankOra AI
+					{/* Vision (first section) */}
+					<Box sx={{ py: { xs: 8, md: 12 }, textAlign: 'center' }} id="vision">
+						<Typography variant="h3" component="h1" sx={{ fontWeight: 800, letterSpacing: 0.5 }}>
+							A private, AI-first finance experience for everyone
 						</Typography>
-						<Typography variant="body1" color="text.secondary" sx={{ mt: 1, maxWidth: 820 }}>
-							To make AI financial guidance accessible to everyone — turning every bank account into a personal financial advisor that helps users make smarter, wealth-building decisions.
+						<Typography variant="h6" color="text.secondary" sx={{ mt: 2, maxWidth: 900, mx: 'auto' }}>
+							We envision a world where every person has access to trustworthy financial coaching—simple insights, personalized plans, and transparent tradeoffs—without giving up privacy. OpenBank AI makes financial literacy practical with clear steps to build resilience and grow wealth.
 						</Typography>
-
-						{/* Interactive mini-scenario */}
-						<Box sx={{ mt: 3, maxWidth: 520 }}>
-							<Typography gutterBottom>Monthly savings goal</Typography>
-							<Slider
-								value={monthlySavings}
-								min={0}
-								max={5000}
-								step={50}
-								onChange={(_, v) => setMonthlySavings(v as number)}
-								valueLabelDisplay="auto"
-							/>
-							<Typography variant="body2" color="text.secondary">
-								Potential in 10 years at 5% APR: {
-									(() => {
-										const r = 0.05 / 12
-										const n = 12 * 10
-										const fv = monthlySavings * ((Math.pow(1 + r, n) - 1) / r)
-										return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(fv)
-									})()
-								}
-							</Typography>
-						{/* Actions are available in Accounts tab */}
-						</Box>
-
-						{/* Interactive Bubbles */}
-						<Box
-							sx={{
-								display: 'grid',
-								gap: 2,
-								gridTemplateColumns: {
-									xs: 'repeat(2, minmax(120px, 1fr))',
-									sm: 'repeat(3, minmax(140px, 1fr))',
-									md: 'repeat(6, minmax(140px, 1fr))'
-								},
-								alignItems: 'center',
-								justifyItems: 'center',
-								mb: 4
-							}}
-						>
-						{facts.map((fact, i) => {
-							const style = bubbleStyles[i % bubbleStyles.length]
-							return (
-								<Paper
-									key={fact.title}
-									sx={{
-										borderRadius: '50%',
-										width: { xs: 120, sm: 140, md: 150 + (i % 3) * 10 },
-										height: { xs: 120, sm: 140, md: 150 + (i % 3) * 10 },
-										display: 'flex',
-										flexDirection: 'column',
-										alignItems: 'center',
-										justifyContent: 'center',
-										textAlign: 'center',
-										p: 2,
-										background: `linear-gradient(135deg, ${style.from}, ${style.to})`,
-										color: '#FFFFFF',
-										border: 0,
-										boxShadow: '0 10px 24px rgba(0,0,0,0.12), 0 8px 18px rgba(0,0,0,0.08)',
-										animation: `${float} 8s ease-in-out infinite`,
-										animationDelay: `${i * 0.25}s`,
-										transition: 'transform .2s ease, box-shadow .2s ease',
-										'&:hover': { transform: 'translateY(-6px) scale(1.05)', boxShadow: '0 14px 28px rgba(0,0,0,0.18)' }
-									}}
-								>
-									<Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#FFFFFF' }}>{fact.title}</Typography>
-									<Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.9)' }}>{fact.subtitle}</Typography>
-								</Paper>
-							)
-							})}
-						</Box>
+						<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 3 }} justifyContent="center">
+							<Button variant="contained" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>Explore Features</Button>
+							<Button variant="outlined" onClick={() => document.getElementById('why')?.scrollIntoView({ behavior: 'smooth' })}>Why OpenBank AI</Button>
+						</Stack>
 					</Box>
 
-					{/* Home has no accounts data */}
+					{/* Stats */}
+					<Box sx={{ py: { xs: 4, md: 6 } }}>
+						<Grid container spacing={2}>
+							<Grid item xs={12} sm={6} md={3}>
+								<Paper sx={{ p: 3, textAlign: 'center' }}>
+									<Typography variant="h4" sx={{ fontWeight: 800 }}>0</Typography>
+									<Typography variant="body2" color="text.secondary">External APIs required</Typography>
+								</Paper>
+							</Grid>
+							<Grid item xs={12} sm={6} md={3}>
+								<Paper sx={{ p: 3, textAlign: 'center' }}>
+									<Typography variant="h4" sx={{ fontWeight: 800 }}>100%</Typography>
+									<Typography variant="body2" color="text.secondary">Local mock data support</Typography>
+								</Paper>
+							</Grid>
+							<Grid item xs={12} sm={6} md={3}>
+								<Paper sx={{ p: 3, textAlign: 'center' }}>
+									<Typography variant="h4" sx={{ fontWeight: 800 }}>Type-safe</Typography>
+									<Typography variant="body2" color="text.secondary">React + TypeScript + MUI</Typography>
+								</Paper>
+							</Grid>
+							<Grid item xs={12} sm={6} md={3}>
+								<Paper sx={{ p: 3, textAlign: 'center' }}>
+									<Typography variant="h4" sx={{ fontWeight: 800 }}>Fast</Typography>
+									<Typography variant="body2" color="text.secondary">Lightweight, responsive UI</Typography>
+								</Paper>
+							</Grid>
+						</Grid>
+					</Box>
+
+					{/* Features (screenshots) */}
+					<Box sx={{ py: { xs: 4, md: 8 } }} id="features">
+						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2, textAlign: 'center' }}>What you’ll get</Typography>
+						<Grid container spacing={2}>
+							<Grid item xs={12} md={6}>
+								<Paper sx={{ p: 2 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Accounts overview</Typography>
+									<Divider sx={{ mb: 1 }} />
+									<Box sx={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, overflow: 'hidden' }}>
+										<Box sx={{ display: 'flex', gap: 1, p: 1, bgcolor: 'rgba(2,6,23,0.03)' }}>
+											<Box sx={{ width: 10, height: 10, bgcolor: '#F87171', borderRadius: '50%' }} />
+											<Box sx={{ width: 10, height: 10, bgcolor: '#FBBF24', borderRadius: '50%' }} />
+											<Box sx={{ width: 10, height: 10, bgcolor: '#34D399', borderRadius: '50%' }} />
+										</Box>
+                                        <Box sx={{ p: 2 }}>
+                                            <Table size="small">
+                                                <TableHead>
+                                                    <TableRow>
+                                                        <TableCell>Name</TableCell>
+                                                        <TableCell>IBAN</TableCell>
+                                                        <TableCell align="right">Balance</TableCell>
+                                                        <TableCell>Currency</TableCell>
+                                                    </TableRow>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {([
+                                                        { name: 'Checking', iban: 'IL12 1234 5678 9012', balance: (balancesForSnapshot[0]?.available ?? 12453.75), currency: 'ILS' },
+                                                        { name: 'Savings', iban: 'IL98 7654 3210 9876', balance: (balancesForSnapshot[1]?.available ?? 50234.10), currency: 'ILS' }
+                                                    ]).map((a, i) => (
+                                                        <TableRow key={i} hover>
+                                                            <TableCell>{a.name}</TableCell>
+                                                            <TableCell>{a.iban}</TableCell>
+                                                            <TableCell align="right">{a.balance.toLocaleString()}</TableCell>
+                                                            <TableCell>{a.currency}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </Box>
+									</Box>
+								</Paper>
+							</Grid>
+							<Grid item xs={12} md={6}>
+								<Paper sx={{ p: 2 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>AI insights & recommendations</Typography>
+									<Divider sx={{ mb: 1 }} />
+									<Box sx={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, overflow: 'hidden' }}>
+										<Box sx={{ display: 'flex', gap: 1, p: 1, bgcolor: 'rgba(2,6,23,0.03)' }}>
+											<Box sx={{ width: 10, height: 10, bgcolor: '#F87171', borderRadius: '50%' }} />
+											<Box sx={{ width: 10, height: 10, bgcolor: '#FBBF24', borderRadius: '50%' }} />
+											<Box sx={{ width: 10, height: 10, bgcolor: '#34D399', borderRadius: '50%' }} />
+										</Box>
+                                        <Box sx={{ p: 2 }}>
+                                            <Stack spacing={1.25}>
+                                                <Typography variant="body2">Based on your balances and loans, here are next steps:</Typography>
+                                                <Stack component="ul" sx={{ pl: 2, m: 0 }} spacing={0.5}
+                                                    >
+                                                    <Typography component="li" variant="body2">Move 10,000 ILS to savings to earn interest</Typography>
+                                                    <Typography component="li" variant="body2">Pay down 2,000 ILS on highest-rate debt</Typography>
+                                                    <Typography component="li" variant="body2">Build a 6-month emergency fund</Typography>
+                                                </Stack>
+                                                <Stack direction="row" spacing={1}>
+                                                    <Chip label="Save more" />
+                                                    <Chip label="Pay debt" />
+                                                    <Chip label="Build cushion" />
+                                                </Stack>
+                                                <Typography variant="caption" color="text.secondary">These are examples. No bank connection required in mock mode.</Typography>
+                                            </Stack>
+                                        </Box>
+									</Box>
+								</Paper>
+							</Grid>
+							<Grid item xs={12} md={6}>
+								<Paper sx={{ p: 2 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Budgets & tracking</Typography>
+									<Divider sx={{ mb: 1 }} />
+									<Box sx={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, overflow: 'hidden' }}>
+										<Box sx={{ display: 'flex', gap: 1, p: 1, bgcolor: 'rgba(2,6,23,0.03)' }}>
+											<Box sx={{ width: 10, height: 10, bgcolor: '#F87171', borderRadius: '50%' }} />
+											<Box sx={{ width: 10, height: 10, bgcolor: '#FBBF24', borderRadius: '50%' }} />
+											<Box sx={{ width: 10, height: 10, bgcolor: '#34D399', borderRadius: '50%' }} />
+										</Box>
+                                        <Box sx={{ p: 2 }}>
+                                            <Stack spacing={1.25}>
+                                                {([
+                                                    { name: 'Food', spent: 1200, limit: 2000 },
+                                                    { name: 'Transport', spent: 450, limit: 800 },
+                                                    { name: 'Housing', spent: 3200, limit: 3200 }
+                                                ]).map((b) => {
+                                                    const pct = Math.min(100, Math.round((b.spent / Math.max(1, b.limit)) * 100))
+                                                    return (
+                                                        <Box key={b.name}>
+                                                            <Stack direction="row" justifyContent="space-between">
+                                                                <Typography variant="body2">{b.name}</Typography>
+                                                                <Typography variant="caption" color="text.secondary">{b.spent.toLocaleString()} / {b.limit.toLocaleString()} ILS</Typography>
+                                                            </Stack>
+                                                            <LinearProgress variant="determinate" value={pct} sx={{ height: 8, borderRadius: 1, mt: 0.5 }} />
+                                                        </Box>
+                                                    )
+                                                })}
+                                            </Stack>
+                                        </Box>
+									</Box>
+								</Paper>
+							</Grid>
+							<Grid item xs={12} md={6}>
+								<Paper sx={{ p: 2 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Stocks simulator</Typography>
+									<Divider sx={{ mb: 1 }} />
+									<Box sx={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, overflow: 'hidden' }}>
+										<Box sx={{ display: 'flex', gap: 1, p: 1, bgcolor: 'rgba(2,6,23,0.03)' }}>
+											<Box sx={{ width: 10, height: 10, bgcolor: '#F87171', borderRadius: '50%' }} />
+											<Box sx={{ width: 10, height: 10, bgcolor: '#FBBF24', borderRadius: '50%' }} />
+											<Box sx={{ width: 10, height: 10, bgcolor: '#34D399', borderRadius: '50%' }} />
+										</Box>
+                                        <Box sx={{ p: 2 }}>
+                                            <Stack spacing={1.25}>
+                                                {(['AAPL','MSFT','NVDA'] as const).map((sym) => {
+                                                    const seed = sym.split('').reduce((s, c) => s + c.charCodeAt(0), 0)
+                                                    const values = Array.from({ length: 24 }, (_, i) => 100 + (seed % 7) + Math.sin(i / 2 + seed) * 2 + i * 0.2)
+                                                    return (
+                                                        <Stack key={sym} direction="row" alignItems="center" spacing={1.25}>
+                                                            <Chip label={sym} size="small" />
+                                                            <Box sx={{ flex: 1 }}>
+                                                                <svg width={160} height={36} viewBox="0 0 160 36">
+                                                                    <path d={linePath(values, 160, 36, 4)} stroke="#0B5ED7" fill="none" strokeWidth={1.5} />
+                                                                </svg>
+                                                            </Box>
+                                                            <Typography variant="caption" color={values[values.length - 1] - values[0] >= 0 ? 'success.main' : 'error.main'}>
+                                                                {((values[values.length - 1] - values[0]) / values[0] * 100).toFixed(1)}%
+                                                            </Typography>
+                                                        </Stack>
+                                                    )
+                                                })}
+                                            </Stack>
+                                        </Box>
+									</Box>
+								</Paper>
+							</Grid>
+						</Grid>
+					</Box>
+
+					{/* Pros / Benefits */}
+					<Box sx={{ py: { xs: 4, md: 6 } }} id="why">
+						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>Why OpenBank AI</Typography>
+						<Grid container spacing={2}>
+							<Grid item xs={12} md={4}>
+								<Paper sx={{ p: 3 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Privacy-first</Typography>
+									<Typography variant="body2" color="text.secondary">Run in mock mode with no external calls. Your data stays local.</Typography>
+								</Paper>
+							</Grid>
+							<Grid item xs={12} md={4}>
+								<Paper sx={{ p: 3 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Actionable insights</Typography>
+									<Typography variant="body2" color="text.secondary">Clear, step-by-step guidance to build savings and reduce debt.</Typography>
+								</Paper>
+							</Grid>
+							<Grid item xs={12} md={4}>
+								<Paper sx={{ p: 3 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Developer-friendly</Typography>
+									<Typography variant="body2" color="text.secondary">TypeScript, React, and MUI with clear modules and mocks.</Typography>
+								</Paper>
+							</Grid>
+						</Grid>
+					</Box>
+
+					{/* Security & Privacy */}
+					<Box sx={{ py: { xs: 4, md: 6 } }}>
+						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>Security & Privacy</Typography>
+						<Grid container spacing={2}>
+							<Grid item xs={12} md={4}>
+								<Paper sx={{ p: 3 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Local-first mocks</Typography>
+									<Typography variant="body2" color="text.secondary">Evaluate features without bank credentials or network access.</Typography>
+								</Paper>
+							</Grid>
+							<Grid item xs={12} md={4}>
+								<Paper sx={{ p: 3 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Configurable</Typography>
+									<Typography variant="body2" color="text.secondary">Switch between demo and live integrations when ready.</Typography>
+								</Paper>
+							</Grid>
+							<Grid item xs={12} md={4}>
+								<Paper sx={{ p: 3 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Minimal surface</Typography>
+									<Typography variant="body2" color="text.secondary">Only essential endpoints when backend is enabled.</Typography>
+								</Paper>
+							</Grid>
+						</Grid>
+					</Box>
+
+					{/* Testimonials */}
+					<Box sx={{ py: { xs: 4, md: 6 } }}>
+						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>What people say</Typography>
+						<Grid container spacing={2}>
+							<Grid item xs={12} md={6}>
+								<Paper sx={{ p: 3 }}>
+									<Typography variant="body2">“The insights helped me pay down debt faster while growing savings.”</Typography>
+									<Divider sx={{ my: 1 }} />
+									<Typography variant="caption" color="text.secondary">Early user</Typography>
+								</Paper>
+							</Grid>
+							<Grid item xs={12} md={6}>
+								<Paper sx={{ p: 3 }}>
+									<Typography variant="body2">“I loved trying it without connecting a bank. Super clear and safe.”</Typography>
+									<Divider sx={{ my: 1 }} />
+									<Typography variant="caption" color="text.secondary">Beta tester</Typography>
+								</Paper>
+							</Grid>
+						</Grid>
+					</Box>
+
+					{/* FAQ */}
+					<Box sx={{ py: { xs: 4, md: 6 } }}>
+						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>FAQ</Typography>
+						<Stack spacing={1.5}>
+							<Paper sx={{ p: 2 }}>
+								<Typography variant="subtitle2">Do I need to connect a real bank?</Typography>
+								<Typography variant="body2" color="text.secondary">No. Mock mode is fully supported and enabled in this build.</Typography>
+							</Paper>
+							<Paper sx={{ p: 2 }}>
+								<Typography variant="subtitle2">What about privacy?</Typography>
+								<Typography variant="body2" color="text.secondary">Your data stays on your device in mock mode. No external calls.</Typography>
+							</Paper>
+						</Stack>
+					</Box>
+
+					{/* Call to action */}
+					<Box sx={{ py: { xs: 4, md: 6 }, textAlign: 'center' }}>
+						<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} justifyContent="center">
+							<Button variant="contained" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>See Features</Button>
+							<Button variant="outlined" onClick={() => document.getElementById('why')?.scrollIntoView({ behavior: 'smooth' })}>Why OpenBank AI</Button>
+						</Stack>
+					</Box>
 				</Box>
 			)}
 
