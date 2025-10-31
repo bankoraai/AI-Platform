@@ -32,6 +32,8 @@ export type Loan = {
     payment: number
     currency: string
     accountId?: string
+    creditLimit?: number
+    kind?: 'revolving' | 'installment'
 }
 
 

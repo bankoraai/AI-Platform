@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { authLoginUrl, fetchAccounts, getPoalimSettings, savePoalimSettings, generateAiInsights, simulateInsightAction } from './lib/api'
 import FinancialSnapshot from './components/FinancialSnapshot'
 import StocksPanel from './components/StocksPanel'
+import DebtPlanner from './components/DebtPlanner'
 import type { Account, AccountBalance, SavingsAccount, Loan } from './lib/types'
 import {
     Alert,
@@ -31,15 +32,35 @@ import {
     TextField,
     Tooltip,
 	Typography,
-    Switch,
-	FormControlLabel,
-	Divider
+	Divider,
+    Skeleton,
+    Badge,
+    AppBar,
+    Toolbar,
+    List,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText,
+    Fade,
+    Avatar
 } from '@mui/material'
+import { useMediaQuery } from '@mui/material'
+// Avoid requiring @mui/lab to keep dependencies minimal
 import MenuItem from '@mui/material/MenuItem'
 // icon imports trimmed to only those used
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
+import LinkedInIcon from '@mui/icons-material/LinkedIn'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
+import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded'
+import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded'
+import LightbulbRoundedIcon from '@mui/icons-material/LightbulbRounded'
+import PieChartRoundedIcon from '@mui/icons-material/PieChartRounded'
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded'
 
 
 // Types moved to ./lib/types
@@ -58,6 +79,7 @@ export default function App() {
     const [accounts, setAccounts] = useState<Account[] | null>(null)
 	const [tab, setTab] = useState(0)
     const [accountsSubTab, setAccountsSubTab] = useState(0)
+    const [insightsSubTab, setInsightsSubTab] = useState(0)
     
 
 	// Settings state
@@ -79,6 +101,12 @@ export default function App() {
 	const [currentStep, setCurrentStep] = useState(0)
 	const [completedActions, setCompletedActions] = useState<string[]>([])
 	const [aiNotes, setAiNotes] = useState('')
+
+	// Accounts UX state (no toggles; responsive density)
+	const isCompact = useMediaQuery('(max-width:600px)')
+	const [refreshing, setRefreshing] = useState(false)
+
+	// Contact form removed; only static contact info shown
 
 	// Budgets state
 	const [budgetsMonth, setBudgetsMonth] = useState<string>(() => {
@@ -107,8 +135,8 @@ export default function App() {
 	const [simSpeed, setSimSpeed] = useState(1)
 	const [simMonths, setSimMonths] = useState(24)
 	const [simPlaying, setSimPlaying] = useState(true)
-const [simProgress, setSimProgress] = useState(0)
-const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; amount?: string; horizon?: string; impact?: string } | null>(null)
+	const [simProgress, setSimProgress] = useState(0)
+	const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; amount?: string; horizon?: string; impact?: string } | null>(null)
 
 
 
@@ -255,6 +283,37 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 		return `M ${points.replace(/ /g, ' L ')}`
 	}
 
+function linePathPartial(values: number[], width: number, height: number, padding: number, uptoIndex: number) {
+    const w = width - padding * 2
+    const h = height - padding * 2
+    const max = Math.max(...values)
+    const min = Math.min(...values)
+    const n = values.length - 1
+    const end = Math.max(0, Math.min(n, uptoIndex))
+    const points: string[] = []
+    for (let i = 0; i <= end; i++) {
+        const v = values[i]
+        const x = padding + (i / Math.max(1, n)) * w
+        const y = padding + h - ((v - min) / Math.max(1, max - min)) * h
+        points.push(`${x},${y}`)
+    }
+    if (points.length === 0) return ''
+    return `M ${points.join(' L ')}`
+}
+
+function pointForIndex(values: number[], width: number, height: number, padding: number, index: number) {
+    const w = width - padding * 2
+    const h = height - padding * 2
+    const max = Math.max(...values)
+    const min = Math.min(...values)
+    const n = values.length - 1
+    const i = Math.max(0, Math.min(n, index))
+    const v = values[i]
+    const x = padding + (i / Math.max(1, n)) * w
+    const y = padding + h - ((v - min) / Math.max(1, max - min)) * h
+    return { x, y }
+}
+
     async function load() {
         setLoading(true)
         setError(null)
@@ -270,12 +329,23 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
         }
     }
 
+	async function handleRefresh() {
+		setRefreshing(true)
+		try {
+			await load()
+		} finally {
+			setRefreshing(false)
+		}
+	}
+
     const ACCOUNTS_TAB_INDEX = 1
     useEffect(() => {
 		if (tab === ACCOUNTS_TAB_INDEX) {
             load()
         }
     }, [tab])
+
+    // Removed auto refresh toggle to simplify UX
 
 	useEffect(() => {
 		(async () => {
@@ -438,26 +508,61 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 		setSaveMsg('Loaded PSD2 1.7 defaults (Poalim dev) — click Save')
 	}
 
+    const teamMembers = [
+        { name: 'Nadi Najjar', role: 'CEO', photo: new URL('../data/nadi.jpg', import.meta.url).href, linkedin: 'https://www.linkedin.com/in/nadi-najjar-01b7b6172/' },
+        { name: 'Dana Shajrawi', role: 'CTO', photo: new URL('../data/dana.jpg', import.meta.url).href, linkedin: 'https://www.linkedin.com/in/dana-shjrawi-46a1ba27a/' }
+    ]
+
+	const navItems = [
+		{ label: 'Home', icon: <HomeRoundedIcon />, idx: 0 },
+		{ label: 'Accounts', icon: <AccountBalanceWalletRoundedIcon />, idx: 1 },
+		{ label: 'Stocks', icon: <ShowChartRoundedIcon />, idx: 2 },
+		{ label: 'Insights', icon: <LightbulbRoundedIcon />, idx: 3 },
+		{ label: 'Budgets', icon: <PieChartRoundedIcon />, idx: 4 },
+		{ label: 'Settings', icon: <SettingsRoundedIcon />, idx: 5 }
+	]
+
+
     return (
 		<Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-			<Tabs value={tab} onChange={(_, v) => setTab(v)} aria-label="Main navigation tabs" sx={{ mb: 3 }}>
-				<Tab label="Home" />
-				<Tab label="Accounts" />
-				<Tab label="Stocks" />
-				<Tab label="Insights" />
-				<Tab label="Budgets" />
-				<Tab label="Settings" />
-			</Tabs>
+			{/* Top bar */}
+			<Paper sx={{ p: 1.25, mb: 2, borderRadius: 2, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)' }}>
+				<Stack direction="row" alignItems="center" justifyContent="space-between">
+					<Stack direction="row" spacing={1.25} alignItems="center">
+						<Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: 0.3 }}>BankOra AI</Typography>
+					</Stack>
+					<Stack direction="row" spacing={1} alignItems="center">
+						<Chip size="small" label={demoMode ? 'Demo' : 'Live'} variant="outlined" />
+						<Button size="small" variant="outlined" onClick={() => setTab(1)} startIcon={<AccountBalanceWalletRoundedIcon />}>Open Accounts</Button>
+					</Stack>
+				</Stack>
+			</Paper>
 
-			{/* Global financial snapshot across tabs (demo mode), hidden on Home */}
-			{demoMode && tab !== 0 && (
-				<FinancialSnapshot
-					balances={balancesForSnapshot}
-					savings={demoSavings}
-					loans={demoLoans}
-					currency="ILS"
-				/>
-			)}
+			{/* Shell layout */}
+			<Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
+				{/* Sidebar nav */}
+				<Paper sx={{ p: 0.5, position: 'sticky', top: 16, alignSelf: 'flex-start', width: { xs: '100%', md: 220 } }}>
+					<List>
+						{navItems.map((it) => (
+							<ListItemButton key={it.idx} selected={tab === it.idx} onClick={() => setTab(it.idx)}>
+								<ListItemIcon>{it.icon}</ListItemIcon>
+								<ListItemText primary={it.label} />
+							</ListItemButton>
+						))}
+					</List>
+				</Paper>
+
+				{/* Main content */}
+				<Box sx={{ flex: 1, minWidth: 0, containerType: 'inline-size' }}>
+					{/* Global financial snapshot across tabs (demo mode), hidden on Home) */}
+					{demoMode && tab !== 0 && (
+						<FinancialSnapshot
+							balances={balancesForSnapshot}
+							savings={demoSavings}
+							loans={demoLoans}
+							currency="ILS"
+						/>
+					)}
 
 			{tab === 0 && (
 				<Box>
@@ -471,12 +576,12 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 						</Typography>
 						<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 3 }} justifyContent="center">
 							<Button variant="contained" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>Explore Features</Button>
-							<Button variant="outlined" onClick={() => document.getElementById('why')?.scrollIntoView({ behavior: 'smooth' })}>Why OpenBank AI</Button>
+							<Button variant="outlined" onClick={() => document.getElementById('why')?.scrollIntoView({ behavior: 'smooth' })}>Why BankOra AI</Button>
 						</Stack>
 					</Box>
 
 					{/* Stats */}
-					<Box sx={{ py: { xs: 4, md: 6 } }}>
+					<Box sx={{ py: { xs: 4, md: 6 } }} id="stats">
 						<Grid container spacing={2}>
 							<Grid item xs={12} sm={6} md={3}>
 								<Paper sx={{ p: 3, textAlign: 'center' }}>
@@ -503,11 +608,11 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 								</Paper>
 							</Grid>
 						</Grid>
-					</Box>
+						</Box>
 
 					{/* Features (screenshots) */}
 					<Box sx={{ py: { xs: 4, md: 8 } }} id="features">
-						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2, textAlign: 'center' }}>What you’ll get</Typography>
+						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2, textAlign: 'center' }}>What you'll get</Typography>
 						<Grid container spacing={2}>
 							<Grid item xs={12} md={6}>
 								<Paper sx={{ p: 2 }}>
@@ -595,7 +700,7 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
                                                     { name: 'Housing', spent: 3200, limit: 3200 }
                                                 ]).map((b) => {
                                                     const pct = Math.min(100, Math.round((b.spent / Math.max(1, b.limit)) * 100))
-                                                    return (
+							return (
                                                         <Box key={b.name}>
                                                             <Stack direction="row" justifyContent="space-between">
                                                                 <Typography variant="body2">{b.name}</Typography>
@@ -640,7 +745,7 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
                                                     )
                                                 })}
                                             </Stack>
-                                        </Box>
+						</Box>
 									</Box>
 								</Paper>
 							</Grid>
@@ -649,7 +754,7 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 
 					{/* Pros / Benefits */}
 					<Box sx={{ py: { xs: 4, md: 6 } }} id="why">
-						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>Why OpenBank AI</Typography>
+						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>Why BankOra AI</Typography>
 						<Grid container spacing={2}>
 							<Grid item xs={12} md={4}>
 								<Paper sx={{ p: 3 }}>
@@ -673,7 +778,7 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 					</Box>
 
 					{/* Security & Privacy */}
-					<Box sx={{ py: { xs: 4, md: 6 } }}>
+					<Box sx={{ py: { xs: 4, md: 6 } }} id="security">
 						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>Security & Privacy</Typography>
 						<Grid container spacing={2}>
 							<Grid item xs={12} md={4}>
@@ -698,19 +803,19 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 					</Box>
 
 					{/* Testimonials */}
-					<Box sx={{ py: { xs: 4, md: 6 } }}>
+					<Box sx={{ py: { xs: 4, md: 6 } }} id="testimonials">
 						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>What people say</Typography>
 						<Grid container spacing={2}>
 							<Grid item xs={12} md={6}>
 								<Paper sx={{ p: 3 }}>
-									<Typography variant="body2">“The insights helped me pay down debt faster while growing savings.”</Typography>
+									<Typography variant="body2">"The insights helped me pay down debt faster while growing savings."</Typography>
 									<Divider sx={{ my: 1 }} />
 									<Typography variant="caption" color="text.secondary">Early user</Typography>
 								</Paper>
 							</Grid>
 							<Grid item xs={12} md={6}>
 								<Paper sx={{ p: 3 }}>
-									<Typography variant="body2">“I loved trying it without connecting a bank. Super clear and safe.”</Typography>
+									<Typography variant="body2">"I loved trying it without connecting a bank. Super clear and safe."</Typography>
 									<Divider sx={{ my: 1 }} />
 									<Typography variant="caption" color="text.secondary">Beta tester</Typography>
 								</Paper>
@@ -718,8 +823,40 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 						</Grid>
 					</Box>
 
+                    {/* Our Team */}
+                    <Box sx={{ py: { xs: 4, md: 6 } }} id="team">
+                        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>Our Team</Typography>
+                        <Grid container spacing={2}>
+                            {teamMembers.map(m => (
+                                <Grid item xs={12} md={6} key={m.name}>
+                                    <Paper sx={{ p: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+                                        <Box sx={{ width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', flex: '0 0 auto', border: '1px solid rgba(0,0,0,0.08)' }}>
+                                            <img src={m.photo} alt={`${m.name} — ${m.role}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        </Box>
+                                        <Box sx={{ flex: 1 }}>
+                                            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{m.name}</Typography>
+                                            <Typography variant="body2" color="text.secondary">{m.role}</Typography>
+                                            <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    startIcon={<LinkedInIcon fontSize="small" />}
+                                                    href={m.linkedin}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    LinkedIn
+                                                </Button>
+                                            </Stack>
+                                        </Box>
+                                    </Paper>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
+
 					{/* FAQ */}
-					<Box sx={{ py: { xs: 4, md: 6 } }}>
+					<Box sx={{ py: { xs: 4, md: 6 } }} id="faq">
 						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>FAQ</Typography>
 						<Stack spacing={1.5}>
 							<Paper sx={{ p: 2 }}>
@@ -733,11 +870,29 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 						</Stack>
 					</Box>
 
+                    
+
+					{/* Contact Us */}
+					<Box sx={{ py: { xs: 4, md: 6 } }} id="contact">
+						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>Contact us</Typography>
+					<Grid container spacing={2}>
+						<Grid item xs={12} md={12}>
+								<Paper sx={{ p: 3 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Get in touch</Typography>
+									<Stack spacing={1} sx={{ mt: 1 }}>
+										<Typography variant="body2">Email: <a href="mailto:bankoraai@gmail.com">bankoraai@gmail.com</a></Typography>
+										<Typography variant="body2" color="text.secondary">We typically respond within 1–2 business days.</Typography>
+									</Stack>
+								</Paper>
+							</Grid>
+						</Grid>
+					</Box>
+
 					{/* Call to action */}
 					<Box sx={{ py: { xs: 4, md: 6 }, textAlign: 'center' }}>
 						<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} justifyContent="center">
 							<Button variant="contained" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>See Features</Button>
-							<Button variant="outlined" onClick={() => document.getElementById('why')?.scrollIntoView({ behavior: 'smooth' })}>Why OpenBank AI</Button>
+							<Button variant="outlined" onClick={() => document.getElementById('why')?.scrollIntoView({ behavior: 'smooth' })}>Why BankOra AI</Button>
 						</Stack>
 					</Box>
 				</Box>
@@ -755,25 +910,72 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 						<Tab label="Savings" />
 						<Tab label="Loans" />
 						</Tabs>
-						{/* Actions */}
-						<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 2 }}>
-							<Button size="large" variant="outlined" onClick={load}>Refresh accounts</Button>
+					{/* Actions */}
+					<Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ mt: 2 }} alignItems={{ xs: 'stretch', md: 'center' }}>
+						<Stack direction="row" spacing={1.25} alignItems="center">
+							<Button
+								startIcon={<RefreshIcon />}
+								variant="outlined"
+								disabled={refreshing || loading}
+								onClick={handleRefresh}
+							>
+								{refreshing || loading ? (
+									<Stack direction="row" spacing={1} alignItems="center">
+										<CircularProgress size={16} />
+										<Typography variant="body2">Refreshing…</Typography>
+									</Stack>
+								) : 'Refresh'}
+							</Button>
 						</Stack>
+
+						<Box sx={{ flex: 1 }} />
+
+						<Chip size="small" label={demoMode ? 'Mode: Demo' : 'Mode: Live'} color={demoMode ? 'default' : 'primary'} variant="outlined" />
+					</Stack>
+
+						{/* Summary indicators */}
+						{accountsSubTab === 0 && (
+							(() => {
+								const total = (accounts || []).reduce((s, a) => s + Number(a.balance || 0), 0)
+						return (
+							<Paper sx={{ p: 2, mt: 2 }}>
+										<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+											<Badge color="primary" badgeContent={(accounts || []).length} max={99}>
+												<Chip label="Accounts" variant="outlined" />
+											</Badge>
+								<Chip label={`Total balance: ${total.toLocaleString()} ILS`} color="primary" variant="outlined" />
+										</Stack>
+									</Paper>
+								)
+							})()
+						)}
 
 						{/* Content */}
 						<Stack spacing={2} sx={{ mt: 2 }}>
 							{accountsSubTab === 0 && (
 								<>
 									{loading && (
-										<Stack direction="row" spacing={1} alignItems="center">
-											<CircularProgress size={20} />
-											<Typography>Loading accounts…</Typography>
-										</Stack>
-									)}
+										<Box>
+											<LinearProgress />
+											<Paper sx={{ p: 2, mt: 2 }}>
+												<Stack spacing={1}>
+													{Array.from({ length: 4 }).map((_, i) => (
+														<Stack key={i} direction="row" spacing={2} alignItems="center">
+															<Skeleton variant="rectangular" width={80} height={18} />
+															<Skeleton variant="rectangular" width={160} height={18} />
+															<Skeleton variant="rectangular" width={220} height={18} />
+															<Skeleton variant="rectangular" width={100} height={18} />
+														</Stack>
+													))}
+												</Stack>
+					</Paper>
+
+				</Box>
+            )}
 									{error && <Alert severity="error">{error}</Alert>}
 									{accounts && (
 										<TableContainer component={Paper} className="glass">
-											<Table size="small" sx={{ minWidth: 700 }}>
+								<Table size={isCompact ? 'small' : 'medium'} sx={{ minWidth: 760 }}>
 												<TableHead>
 													<TableRow>
 														<TableCell>ID</TableCell>
@@ -781,18 +983,35 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 														<TableCell>IBAN</TableCell>
 														<TableCell align="right">Balance</TableCell>
 														<TableCell>Currency</TableCell>
+														<TableCell align="right">Actions</TableCell>
 													</TableRow>
 												</TableHead>
 												<TableBody>
-													{accounts.map((a, i) => (
-														<TableRow key={a.id || i} hover>
-															<TableCell>{a.id || '-'}</TableCell>
-															<TableCell>{a.name || '-'}</TableCell>
-															<TableCell>{a.iban || '-'}</TableCell>
-															<TableCell align="right">{a.balance ?? '-'}</TableCell>
-															<TableCell>{a.currency || '-'}</TableCell>
-														</TableRow>
-													))}
+													{accounts.map((a, i) => {
+												return (
+													<TableRow key={a.id || i} hover>
+																<TableCell>{a.id || '-'}</TableCell>
+																<TableCell>{a.name || '-'}</TableCell>
+																<TableCell>{a.iban || '-'}</TableCell>
+																<TableCell align="right">{a.balance !== undefined ? a.balance.toLocaleString() : '-'}</TableCell>
+																<TableCell>{a.currency || '-'}</TableCell>
+																<TableCell align="right">
+																	<Stack direction="row" spacing={0.5} justifyContent="flex-end">
+																		<Tooltip title="Copy IBAN">
+																			<IconButton size="small" onClick={() => { if (a.iban) { navigator.clipboard?.writeText(a.iban) } }}>
+																				<ContentCopyIcon fontSize="inherit" />
+																			</IconButton>
+																		</Tooltip>
+																		<Tooltip title="Quick view">
+																			<IconButton size="small" disabled>
+																				<VisibilityIcon fontSize="inherit" />
+																			</IconButton>
+																		</Tooltip>
+																	</Stack>
+																</TableCell>
+															</TableRow>
+														)
+													})}
 												</TableBody>
 											</Table>
 										</TableContainer>
@@ -971,6 +1190,7 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 							)}
 						</Stack>
 					</Paper>
+
 				</Box>
 			)}
 
@@ -993,6 +1213,11 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 
 		{tab === 3 && (
 				<Box>
+					<Tabs value={insightsSubTab} onChange={(_, v) => setInsightsSubTab(v)} sx={{ mb: 2 }}>
+						<Tab label="Overview" />
+						<Tab label="Debt Planner" />
+					</Tabs>
+					{insightsSubTab === 0 && (
 					<Paper sx={{ p: 3 }} className="glass">
 						<Typography variant="h5" sx={{ fontWeight: 600 }}>Insights</Typography>
 						<Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -1126,10 +1351,16 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 										})()}
 									</>
 								)}
-							</Stack>
-						</Paper>
-				</Box>
-			)}
+					</Stack>
+					   </Paper>
+					   )}
+					   {insightsSubTab === 1 && (
+		   			<Box>
+		   				<DebtPlanner onSimulate={() => openSimulation({ action: 'Debt payoff plan' })} />
+		   			</Box>
+					   )}
+			   </Box>
+			   )}
 
 		{tab === 4 && (
 				<Box>
@@ -1240,6 +1471,9 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 							)}
 						</Stack>
 					</Paper>
+					<Box sx={{ mt: 2 }}>
+						<DebtPlanner onSimulate={() => openSimulation({ action: 'Debt payoff plan' })} />
+					</Box>
 				</Box>
 			)}
 
@@ -1251,10 +1485,7 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 							Connect your bank to securely fetch accounts and insights.
 						</Typography>
 						<Stack spacing={2} sx={{ mt: 3 }}>
-						<FormControlLabel
-							control={<Switch checked={demoMode} onChange={(_, v) => setDemoMode(v)} />}
-							label={demoMode ? 'Demo mode: ON (using mock data)' : 'Demo mode: OFF'}
-						/>
+						<Alert severity="info">Demo mode is active in this build.</Alert>
 							<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
 								<TextField label="Poalim Client ID" fullWidth value={clientId} onChange={(e) => setClientId(e.target.value)} />
 								<TextField label={hasSecret ? 'Poalim Client Secret (set)' : 'Poalim Client Secret'} type="password" fullWidth value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} />
@@ -1287,6 +1518,9 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 					</Paper>
 				</Box>
 			)}
+
+				</Box>
+			</Stack>
 
 		{/* Global Simulation Dialog (visible across tabs) */}
 		<Dialog open={simOpen} onClose={() => setSimOpen(false)} fullWidth maxWidth="md">
@@ -1335,10 +1569,12 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 										const x = padding + (i / 8) * w
 										g.push(<line key={`v-${i}`} x1={x} x2={x} y1={padding} y2={320 - padding} stroke="rgba(0,0,0,0.06)" />)
 									}
-									// y ticks from net series
-									const vals = (simData!.series.net || [])
-									const min = Math.min(...vals)
-									const max = Math.max(...vals)
+							// y ticks from chosen series (debt for debt planner, net otherwise)
+							const fromDebtPlanner = (selectedSuggestion?.action || '').toLowerCase().includes('debt')
+							const source = fromDebtPlanner ? (simData!.series.debt || []) : (simData!.series.net || [])
+							const vals = fromDebtPlanner ? source.map(v => -v) : source
+							const min = Math.min(...vals)
+							const max = Math.max(...vals)
 									for (let j = 0; j <= 4; j++) {
 										const y = padding + (j / 4) * h
 										const val = max - (j / 4) * (max - min)
@@ -1348,13 +1584,25 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 									return <g>{g}</g>
 								})()}
 
-								{/* Area under net for clarity */}
+						{/* Paths */}
+						{(selectedSuggestion?.action || '').toLowerCase().includes('debt') ? (
+							<>
+								<path d={linePathPartial(simData!.series.debt.map(v => -v), 760, 320, 28, simProgress)} fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+								{(() => {
+									const pts = simData!.series.debt.map(v => -v)
+									const p = pointForIndex(pts, 760, 320, 28, simProgress)
+									return <circle cx={p.x} cy={p.y} r={3} fill="#EF4444" />
+								})()}
+							</>
+						) : (
+							<g>
 								<path d={areaPath(simData!.series.net, 760, 320, 28)} fill="rgba(11,94,215,0.08)" />
-								{/* Paths */}
 								<path d={linePath(simData!.series.net, 760, 320, 28)} fill="none" stroke="#0B5ED7" strokeWidth="2.5" />
-									<path d={linePath(simData!.series.cash, 760, 320, 28)} fill="none" stroke="#22C55E" strokeWidth="2" />
-									<path d={linePath(simData!.series.savings, 760, 320, 28)} fill="none" stroke="#8B5CF6" strokeWidth="2" />
-									<path d={linePath(simData!.series.debt.map(v => -v), 760, 320, 28)} fill="none" stroke="#EF4444" strokeWidth="2" />
+								<path d={linePath(simData!.series.cash, 760, 320, 28)} fill="none" stroke="#22C55E" strokeWidth="2" />
+								<path d={linePath(simData!.series.savings, 760, 320, 28)} fill="none" stroke="#8B5CF6" strokeWidth="2" />
+								<path d={linePath(simData!.series.debt.map(v => -v), 760, 320, 28)} fill="none" stroke="#EF4444" strokeWidth="2" />
+							</g>
+						)}
 									{(() => {
 										const idx = Math.min(simProgress, simData!.series.net.length - 1)
 										const padding = 28
@@ -1363,25 +1611,40 @@ const [selectedSuggestion, setSelectedSuggestion] = useState<{ action: string; a
 										return <line x1={x} x2={x} y1={padding} y2={300 - padding} stroke="rgba(0,0,0,0.1)" strokeDasharray="4 6" />
 									})()}
 								</svg>
-								{/* Legend */}
-								<Box sx={{ position: 'absolute', left: 12, top: 12, bgcolor: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, p: 1 }}>
-									<Stack direction="row" spacing={1}>
-										<Chip size="small" label="Net" variant="outlined" sx={{ color: '#0B5ED7', borderColor: '#0B5ED7' }} />
-										<Chip size="small" label="Cash" variant="outlined" sx={{ color: '#22C55E', borderColor: '#22C55E' }} />
-										<Chip size="small" label="Savings" variant="outlined" sx={{ color: '#8B5CF6', borderColor: '#8B5CF6' }} />
-										<Chip size="small" label="Debt" variant="outlined" sx={{ color: '#EF4444', borderColor: '#EF4444' }} />
-									</Stack>
-								</Box>
-								{/* Readout */}
-								<Box sx={{ position: 'absolute', right: 12, top: 12, bgcolor: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, p: 1 }}>
-									<Stack spacing={0.5}>
-										<Typography variant="caption" color="text.secondary">Month {simProgress}</Typography>
-										<Typography variant="caption"><strong>Net:</strong> {Math.round(simData!.series.net[Math.min(simProgress, simData!.series.net.length - 1)]).toLocaleString()}</Typography>
-										<Typography variant="caption"><strong>Cash:</strong> {Math.round(simData!.series.cash[Math.min(simProgress, simData!.series.cash.length - 1)]).toLocaleString()}</Typography>
-										<Typography variant="caption"><strong>Savings:</strong> {Math.round(simData!.series.savings[Math.min(simProgress, simData!.series.savings.length - 1)]).toLocaleString()}</Typography>
-										<Typography variant="caption"><strong>Debt:</strong> {Math.round(simData!.series.debt[Math.min(simProgress, simData!.series.debt.length - 1)]).toLocaleString()}</Typography>
-									</Stack>
-								</Box>
+						{/* Legend */}
+						{(selectedSuggestion?.action || '').toLowerCase().includes('debt') ? (
+							<Box sx={{ position: 'absolute', left: 12, top: 12, bgcolor: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, p: 1 }}>
+								<Chip size="small" label="Debt" variant="outlined" sx={{ color: '#EF4444', borderColor: '#EF4444' }} />
+							</Box>
+						) : (
+							<Box sx={{ position: 'absolute', left: 12, top: 12, bgcolor: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, p: 1 }}>
+								<Stack direction="row" spacing={1}>
+									<Chip size="small" label="Net" variant="outlined" sx={{ color: '#0B5ED7', borderColor: '#0B5ED7' }} />
+									<Chip size="small" label="Cash" variant="outlined" sx={{ color: '#22C55E', borderColor: '#22C55E' }} />
+									<Chip size="small" label="Savings" variant="outlined" sx={{ color: '#8B5CF6', borderColor: '#8B5CF6' }} />
+									<Chip size="small" label="Debt" variant="outlined" sx={{ color: '#EF4444', borderColor: '#EF4444' }} />
+								</Stack>
+							</Box>
+						)}
+						{/* Readout */}
+						{(selectedSuggestion?.action || '').toLowerCase().includes('debt') ? (
+							<Box sx={{ position: 'absolute', right: 12, top: 12, bgcolor: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, p: 1 }}>
+								<Stack spacing={0.5}>
+									<Typography variant="caption" color="text.secondary">Month {simProgress}</Typography>
+									<Typography variant="caption"><strong>Debt:</strong> {Math.round(simData!.series.debt[Math.min(simProgress, simData!.series.debt.length - 1)]).toLocaleString()}</Typography>
+								</Stack>
+							</Box>
+						) : (
+							<Box sx={{ position: 'absolute', right: 12, top: 12, bgcolor: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, p: 1 }}>
+								<Stack spacing={0.5}>
+									<Typography variant="caption" color="text.secondary">Month {simProgress}</Typography>
+									<Typography variant="caption"><strong>Net:</strong> {Math.round(simData!.series.net[Math.min(simProgress, simData!.series.net.length - 1)]).toLocaleString()}</Typography>
+									<Typography variant="caption"><strong>Cash:</strong> {Math.round(simData!.series.cash[Math.min(simProgress, simData!.series.cash.length - 1)]).toLocaleString()}</Typography>
+									<Typography variant="caption"><strong>Savings:</strong> {Math.round(simData!.series.savings[Math.min(simProgress, simData!.series.savings.length - 1)]).toLocaleString()}</Typography>
+									<Typography variant="caption"><strong>Debt:</strong> {Math.round(simData!.series.debt[Math.min(simProgress, simData!.series.debt.length - 1)]).toLocaleString()}</Typography>
+								</Stack>
+							</Box>
+						)}
 							</Box>
 
 							{/* Narrative */}
