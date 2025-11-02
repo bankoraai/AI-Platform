@@ -3,6 +3,7 @@ import { authLoginUrl, fetchAccounts, getPoalimSettings, savePoalimSettings, gen
 import FinancialSnapshot from './components/FinancialSnapshot'
 import StocksPanel from './components/StocksPanel'
 import DebtPlanner from './components/DebtPlanner'
+import ScenarioStudio from './components/ScenarioStudio'
 import type { Account, AccountBalance, SavingsAccount, Loan } from './lib/types'
 import { FadeIn, Reveal, HoverLift } from './lib/anim'
 import { motion } from 'framer-motion'
@@ -63,6 +64,7 @@ import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded'
 import LightbulbRoundedIcon from '@mui/icons-material/LightbulbRounded'
 import PieChartRoundedIcon from '@mui/icons-material/PieChartRounded'
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded'
+import AutoGraphIcon from '@mui/icons-material/AutoGraph'
 
 
 // Types moved to ./lib/types
@@ -165,6 +167,49 @@ export default function App() {
     ]
 
     const [demoBalances, setDemoBalances] = useState<AccountBalance[]>([])
+
+	// Basic auth gate: require sign-in before non-Home tabs
+	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+		try { return localStorage.getItem('is_authed') === '1' } catch { return false }
+	})
+	const [loginOpen, setLoginOpen] = useState<boolean>(false)
+	const [loginEmail, setLoginEmail] = useState('')
+	const [loginPassword, setLoginPassword] = useState('')
+	const [showPassword, setShowPassword] = useState(false)
+
+	useEffect(() => {
+		if (!isAuthenticated) setLoginOpen(true)
+	}, [])
+
+	function handleSignIn() {
+		// Mock sign-in
+		if (!loginEmail || !loginPassword) return
+		try { localStorage.setItem('is_authed', '1') } catch {}
+		setIsAuthenticated(true)
+		setLoginOpen(false)
+	}
+
+	function handleDemoSignIn() {
+		try { localStorage.setItem('is_authed', '1') } catch {}
+		setIsAuthenticated(true)
+		setLoginOpen(false)
+		setTab(1)
+	}
+
+	function handleSignOut() {
+		try { localStorage.removeItem('is_authed') } catch {}
+		setIsAuthenticated(false)
+		setTab(0)
+		setLoginOpen(true)
+	}
+
+	function requireAuth(navigateTo?: number) {
+		if (isAuthenticated) {
+			if (typeof navigateTo === 'number') setTab(navigateTo)
+		} else {
+			setLoginOpen(true)
+		}
+	}
 
     useEffect(() => {
         try {
@@ -525,7 +570,8 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 		{ label: 'Stocks', icon: <ShowChartRoundedIcon />, idx: 2 },
 		{ label: 'Insights', icon: <LightbulbRoundedIcon />, idx: 3 },
 		{ label: 'Budgets', icon: <PieChartRoundedIcon />, idx: 4 },
-		{ label: 'Settings', icon: <SettingsRoundedIcon />, idx: 5 }
+		{ label: 'Settings', icon: <SettingsRoundedIcon />, idx: 5 },
+		{ label: 'Scenario Studio', icon: <AutoGraphIcon />, idx: 6 }
 	]
 
 
@@ -625,9 +671,16 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 										transition={{ duration: 0.25 }}
 									/>
 									<Stack direction="row" spacing={1} alignItems="center" style={{ position: 'relative', zIndex: 1 }}>
-										<motion.div whileHover={{ y: -1, scale: 1.03 }} whileTap={{ scale: 0.98 }} style={{ display: 'inline-block' }}>
-											<Button size="small" variant="outlined" onClick={() => setTab(1)} startIcon={<AccountBalanceWalletRoundedIcon />}>Open Accounts</Button>
-										</motion.div>
+																<motion.div whileHover={{ y: -1, scale: 1.03 }} whileTap={{ scale: 0.98 }} style={{ display: 'inline-block' }}>
+																	<Button size="small" variant="outlined" onClick={() => requireAuth(1)} startIcon={<AccountBalanceWalletRoundedIcon />}>Open Accounts</Button>
+																</motion.div>
+																<motion.div whileHover={{ y: -1, scale: 1.03 }} whileTap={{ scale: 0.98 }} style={{ display: 'inline-block', marginLeft: 8 }}>
+																	{!isAuthenticated ? (
+																		<Button size="small" variant="contained" onClick={() => setLoginOpen(true)}>Sign in</Button>
+																	) : (
+																		<Button size="small" variant="outlined" color="error" onClick={handleSignOut}>Sign out</Button>
+																	)}
+																</motion.div>
 									</Stack>
 								</motion.div>
 							</Box>
@@ -637,17 +690,19 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 
 			{/* Shell layout */}
 			<Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
-				{/* Sidebar nav */}
-				<Paper sx={{ p: 0.5, position: 'sticky', top: 16, alignSelf: 'flex-start', width: { xs: '100%', md: 220 } }}>
-					<List>
-						{navItems.map((it) => (
-							<ListItemButton key={it.idx} selected={tab === it.idx} onClick={() => setTab(it.idx)}>
-								<ListItemIcon>{it.icon}</ListItemIcon>
-								<ListItemText primary={it.label} />
-							</ListItemButton>
-						))}
-					</List>
-				</Paper>
+				{/* Sidebar nav - hidden until authenticated */}
+				{isAuthenticated && (
+					<Paper sx={{ p: 0.5, position: 'sticky', top: 16, alignSelf: 'flex-start', width: { xs: '100%', md: 220 } }}>
+						<List>
+							{navItems.map((it) => (
+								<ListItemButton key={it.idx} selected={tab === it.idx} onClick={() => (it.idx === 0 ? setTab(0) : requireAuth(it.idx))}>
+									<ListItemIcon>{it.icon}</ListItemIcon>
+									<ListItemText primary={it.label} />
+								</ListItemButton>
+							))}
+						</List>
+					</Paper>
+				)}
 
 				{/* Main content */}
 				<Box sx={{ flex: 1, minWidth: 0, containerType: 'inline-size' }}>
@@ -1463,7 +1518,7 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 											helperText="Used to size your emergency fund"
 											id="monthly-expenses-input"
 										/>
-										<Button variant="outlined" onClick={() => setTab(1)}>Open Accounts</Button>
+																	<Button variant="outlined" onClick={() => requireAuth(1)}>Open Accounts</Button>
 										<Button
 											variant="contained"
 											disabled={!demoMode || aiLoading}
@@ -1741,8 +1796,61 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 				</Box>
 			)}
 
+			{tab === 6 && (
+				<Box>
+					<ScenarioStudio balances={balancesForSnapshot} />
+				</Box>
+			)}
+
 				</Box>
 			</Stack>
+
+			{/* Sign-in dialog */}
+			<Dialog open={loginOpen} onClose={() => setLoginOpen(false)} maxWidth="sm" fullWidth>
+				<DialogTitle>
+					<Stack direction="row" alignItems="center" spacing={1}>
+						<Typography variant="h6" sx={{ fontWeight: 800 }}>Welcome to BankOra AI</Typography>
+					</Stack>
+				</DialogTitle>
+				<DialogContent dividers>
+					<Stack spacing={2}>
+						<Box sx={{ position: 'relative', borderRadius: 2, overflow: 'hidden', p: 2, background: 'linear-gradient(135deg, rgba(11,94,215,0.08), rgba(99,102,241,0.08))' }}>
+							<motion.div
+								initial={{ opacity: 0, scale: 0.98 }}
+								animate={{ opacity: 1, scale: 1 }}
+								transition={{ duration: 0.25 }}
+							>
+								<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Sign in to continue</Typography>
+								<Typography variant="body2" color="text.secondary">Access Accounts, Stocks, Insights, Budgets and Settings.</Typography>
+							</motion.div>
+						</Box>
+
+						<Stack spacing={1.25}>
+							<TextField label="Email" type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} autoFocus />
+							<Stack direction="row" spacing={1} alignItems="center">
+								<TextField label="Password" type={showPassword ? 'text' : 'password'} value={loginPassword} onChange={e => setLoginPassword(e.target.value)} sx={{ flex: 1 }} />
+								<IconButton size="small" onClick={() => setShowPassword(v => !v)} aria-label="toggle password visibility">
+									<VisibilityIcon fontSize="small" />
+								</IconButton>
+							</Stack>
+						</Stack>
+
+					<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+						<Button variant="contained" onClick={handleSignIn} disabled={!loginEmail || !loginPassword} fullWidth>Sign in</Button>
+						<Button variant="outlined" color="secondary" onClick={handleDemoSignIn} fullWidth>Continue in Demo</Button>
+					</Stack>
+
+					<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 1 }}>
+						<Button variant="outlined" startIcon={<LinkedInIcon />} fullWidth onClick={handleDemoSignIn}>Continue with LinkedIn</Button>
+					</Stack>
+
+					<Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>By continuing, you agree to our Terms and Privacy Policy.</Typography>
+					</Stack>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setLoginOpen(false)}>Close</Button>
+				</DialogActions>
+			</Dialog>
 
 		{/* Global Simulation Dialog (visible across tabs) */}
 		<Dialog open={simOpen} onClose={() => setSimOpen(false)} fullWidth maxWidth="md">
