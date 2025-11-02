@@ -4,6 +4,8 @@ import FinancialSnapshot from './components/FinancialSnapshot'
 import StocksPanel from './components/StocksPanel'
 import DebtPlanner from './components/DebtPlanner'
 import type { Account, AccountBalance, SavingsAccount, Loan } from './lib/types'
+import { FadeIn, Reveal, HoverLift } from './lib/anim'
+import { motion } from 'framer-motion'
 import {
     Alert,
     Box,
@@ -105,6 +107,10 @@ export default function App() {
 	// Accounts UX state (no toggles; responsive density)
 	const isCompact = useMediaQuery('(max-width:600px)')
 	const [refreshing, setRefreshing] = useState(false)
+	const [brandHover, setBrandHover] = useState(false)
+	const [brandXY, setBrandXY] = useState<{ x: number; y: number; w: number; h: number }>({ x: 0, y: 0, w: 1, h: 1 })
+	const [actionsHover, setActionsHover] = useState(false)
+	const [actionsXY, setActionsXY] = useState<{ x: number; y: number; w: number; h: number }>({ x: 0, y: 0, w: 1, h: 1 })
 
 	// Contact form removed; only static contact info shown
 
@@ -525,18 +531,109 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 
     return (
 		<Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-			{/* Top bar */}
-			<Paper sx={{ p: 1.25, mb: 2, borderRadius: 2, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)' }}>
-				<Stack direction="row" alignItems="center" justifyContent="space-between">
-					<Stack direction="row" spacing={1.25} alignItems="center">
-						<Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: 0.3 }}>BankOra AI</Typography>
+				{/* Top bar */}
+				<Paper sx={{ p: 1.25, mb: 2, borderRadius: 2, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)' }}>
+					<Stack direction="row" alignItems="center" justifyContent="space-between">
+						<Stack direction="row" spacing={1.25} alignItems="center">
+							<FadeIn>
+								<Box sx={{ position: 'relative', perspective: 800 }}>
+									<motion.div
+										style={{ transformStyle: 'preserve-3d', position: 'relative' }}
+										onMouseEnter={() => setBrandHover(true)}
+										onMouseLeave={() => setBrandHover(false)}
+										onMouseMove={(e) => {
+											const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+											const x = e.clientX - rect.left
+											const y = e.clientY - rect.top
+											setBrandXY({ x, y, w: rect.width, h: rect.height })
+										}}
+										animate={{
+											rotateX: brandHover ? ((brandXY.y / Math.max(1, brandXY.h) - 0.5) * -10) : 0,
+											rotateY: brandHover ? ((brandXY.x / Math.max(1, brandXY.w) - 0.5) * 10) : 0,
+											scale: brandHover ? 1.02 : 1
+										}}
+										transition={{ type: 'spring', stiffness: 180, damping: 18 }}
+									>
+										{/* cursor-follow glow */}
+										<motion.span
+											style={{
+												position: 'absolute',
+												inset: '-8px',
+												borderRadius: 10,
+												pointerEvents: 'none',
+												zIndex: 0,
+												background: `radial-gradient(120px 120px at ${Math.round(brandXY.x)}px ${Math.round(brandXY.y)}px, rgba(11,94,215,0.18), transparent 60%)`
+											}}
+											animate={{ opacity: brandHover ? 1 : 0 }}
+											transition={{ duration: 0.25 }}
+										/>
+										<Stack direction="row" spacing={1} alignItems="center" style={{ position: 'relative', zIndex: 1 }}>
+											<Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: 0.3 }}>
+												<motion.span
+													initial={{ backgroundPositionX: '0%' }}
+													animate={{ backgroundPositionX: ['0%', '200%'] }}
+													transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+													style={{
+														background: 'linear-gradient(90deg, #0B5ED7, #22C55E, #8B5CF6, #0B5ED7)',
+														backgroundSize: '200% 100%',
+														WebkitBackgroundClip: 'text',
+														WebkitTextFillColor: 'transparent'
+													}}
+												>
+													BankOra AI
+												</motion.span>
+											</Typography>
+											<motion.span
+												style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22C55E' }}
+												animate={{ scale: [1, 1.2, 1], opacity: [0.6, 1, 0.6] }}
+												transition={{ duration: 1.2, repeat: Infinity }}
+											/>
+										</Stack>
+									</motion.div>
+								</Box>
+							</FadeIn>
+						</Stack>
+						<FadeIn delay={0.05}>
+							<Box sx={{ position: 'relative', perspective: 800 }}>
+								<motion.div
+									style={{ transformStyle: 'preserve-3d', position: 'relative' }}
+									onMouseEnter={() => setActionsHover(true)}
+									onMouseLeave={() => setActionsHover(false)}
+									onMouseMove={(e) => {
+										const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+										const x = e.clientX - rect.left
+										const y = e.clientY - rect.top
+										setActionsXY({ x, y, w: rect.width, h: rect.height })
+									}}
+									animate={{
+										rotateX: actionsHover ? ((actionsXY.y / Math.max(1, actionsXY.h) - 0.5) * -8) : 0,
+										rotateY: actionsHover ? ((actionsXY.x / Math.max(1, actionsXY.w) - 0.5) * 8) : 0,
+										scale: actionsHover ? 1.02 : 1
+									}}
+									transition={{ type: 'spring', stiffness: 180, damping: 18 }}
+								>
+									<motion.span
+										style={{
+											position: 'absolute',
+											inset: '-8px',
+											borderRadius: 10,
+											pointerEvents: 'none',
+											zIndex: 0,
+											background: `radial-gradient(120px 120px at ${Math.round(actionsXY.x)}px ${Math.round(actionsXY.y)}px, rgba(99,102,241,0.18), transparent 60%)`
+										}}
+										animate={{ opacity: actionsHover ? 1 : 0 }}
+										transition={{ duration: 0.25 }}
+									/>
+									<Stack direction="row" spacing={1} alignItems="center" style={{ position: 'relative', zIndex: 1 }}>
+										<motion.div whileHover={{ y: -1, scale: 1.03 }} whileTap={{ scale: 0.98 }} style={{ display: 'inline-block' }}>
+											<Button size="small" variant="outlined" onClick={() => setTab(1)} startIcon={<AccountBalanceWalletRoundedIcon />}>Open Accounts</Button>
+										</motion.div>
+									</Stack>
+								</motion.div>
+							</Box>
+						</FadeIn>
 					</Stack>
-					<Stack direction="row" spacing={1} alignItems="center">
-						<Chip size="small" label={demoMode ? 'Demo' : 'Live'} variant="outlined" />
-						<Button size="small" variant="outlined" onClick={() => setTab(1)} startIcon={<AccountBalanceWalletRoundedIcon />}>Open Accounts</Button>
-					</Stack>
-				</Stack>
-			</Paper>
+				</Paper>
 
 			{/* Shell layout */}
 			<Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
@@ -566,56 +663,80 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 
 			{tab === 0 && (
 				<Box>
-					{/* Vision (first section) */}
-					<Box sx={{ py: { xs: 8, md: 12 }, textAlign: 'center' }} id="vision">
-						<Typography variant="h3" component="h1" sx={{ fontWeight: 800, letterSpacing: 0.5 }}>
-							A private, AI-first finance experience for everyone
-						</Typography>
-						<Typography variant="h6" color="text.secondary" sx={{ mt: 2, maxWidth: 900, mx: 'auto' }}>
-							We envision a world where every person has access to trustworthy financial coaching—simple insights, personalized plans, and transparent tradeoffs—without giving up privacy. OpenBank AI makes financial literacy practical with clear steps to build resilience and grow wealth.
-						</Typography>
-						<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 3 }} justifyContent="center">
-							<Button variant="contained" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>Explore Features</Button>
-							<Button variant="outlined" onClick={() => document.getElementById('why')?.scrollIntoView({ behavior: 'smooth' })}>Why BankOra AI</Button>
-						</Stack>
-					</Box>
+						{/* Vision (first section) */}
+						<Box sx={{ py: { xs: 8, md: 12 }, textAlign: 'center' }} id="vision">
+							<FadeIn>
+								<Typography variant="h3" component="h1" sx={{ fontWeight: 800, letterSpacing: 0.5 }}>
+									A private, AI-first finance experience for everyone
+								</Typography>
+							</FadeIn>
+							<FadeIn delay={0.08}>
+								<Typography variant="h6" color="text.secondary" sx={{ mt: 2, maxWidth: 900, mx: 'auto' }}>
+									We envision a world where every person has access to trustworthy financial coaching—simple insights, personalized plans, and transparent tradeoffs—without giving up privacy. OpenBank AI makes financial literacy practical with clear steps to build resilience and grow wealth.
+								</Typography>
+							</FadeIn>
+							<FadeIn delay={0.16}>
+								<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 3 }} justifyContent="center">
+									<Button variant="contained" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>Explore Features</Button>
+									<Button variant="outlined" onClick={() => document.getElementById('why')?.scrollIntoView({ behavior: 'smooth' })}>Why BankOra AI</Button>
+								</Stack>
+							</FadeIn>
+						</Box>
 
 					{/* Stats */}
-					<Box sx={{ py: { xs: 4, md: 6 } }} id="stats">
+						<Box sx={{ py: { xs: 4, md: 6 } }} id="stats">
 						<Grid container spacing={2}>
-							<Grid item xs={12} sm={6} md={3}>
-								<Paper sx={{ p: 3, textAlign: 'center' }}>
+								<Grid item xs={12} sm={6} md={3}>
+									<Reveal>
+										<HoverLift>
+											<Paper sx={{ p: 3, textAlign: 'center' }}>
 									<Typography variant="h4" sx={{ fontWeight: 800 }}>0</Typography>
 									<Typography variant="body2" color="text.secondary">External APIs required</Typography>
-								</Paper>
+										</Paper>
+										</HoverLift>
+									</Reveal>
 							</Grid>
-							<Grid item xs={12} sm={6} md={3}>
-								<Paper sx={{ p: 3, textAlign: 'center' }}>
+								<Grid item xs={12} sm={6} md={3}>
+									<Reveal delay={0.06}>
+										<HoverLift>
+											<Paper sx={{ p: 3, textAlign: 'center' }}>
 									<Typography variant="h4" sx={{ fontWeight: 800 }}>100%</Typography>
 									<Typography variant="body2" color="text.secondary">Local mock data support</Typography>
-								</Paper>
+										</Paper>
+										</HoverLift>
+									</Reveal>
 							</Grid>
-							<Grid item xs={12} sm={6} md={3}>
-								<Paper sx={{ p: 3, textAlign: 'center' }}>
+								<Grid item xs={12} sm={6} md={3}>
+									<Reveal delay={0.12}>
+										<HoverLift>
+											<Paper sx={{ p: 3, textAlign: 'center' }}>
 									<Typography variant="h4" sx={{ fontWeight: 800 }}>Type-safe</Typography>
 									<Typography variant="body2" color="text.secondary">React + TypeScript + MUI</Typography>
-								</Paper>
+										</Paper>
+										</HoverLift>
+									</Reveal>
 							</Grid>
-							<Grid item xs={12} sm={6} md={3}>
-								<Paper sx={{ p: 3, textAlign: 'center' }}>
+								<Grid item xs={12} sm={6} md={3}>
+									<Reveal delay={0.18}>
+										<HoverLift>
+											<Paper sx={{ p: 3, textAlign: 'center' }}>
 									<Typography variant="h4" sx={{ fontWeight: 800 }}>Fast</Typography>
 									<Typography variant="body2" color="text.secondary">Lightweight, responsive UI</Typography>
-								</Paper>
+										</Paper>
+										</HoverLift>
+									</Reveal>
 							</Grid>
 						</Grid>
 						</Box>
 
 					{/* Features (screenshots) */}
-					<Box sx={{ py: { xs: 4, md: 8 } }} id="features">
+						<Box sx={{ py: { xs: 4, md: 8 } }} id="features">
 						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2, textAlign: 'center' }}>What you'll get</Typography>
 						<Grid container spacing={2}>
-							<Grid item xs={12} md={6}>
-								<Paper sx={{ p: 2 }}>
+								<Grid item xs={12} md={6}>
+									<Reveal>
+										<HoverLift>
+											<Paper sx={{ p: 2 }}>
 									<Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Accounts overview</Typography>
 									<Divider sx={{ mb: 1 }} />
 									<Box sx={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, overflow: 'hidden' }}>
@@ -649,11 +770,15 @@ function pointForIndex(values: number[], width: number, height: number, padding:
                                                 </TableBody>
                                             </Table>
                                         </Box>
-									</Box>
-								</Paper>
+											</Box>
+										</Paper>
+										</HoverLift>
+									</Reveal>
 							</Grid>
-							<Grid item xs={12} md={6}>
-								<Paper sx={{ p: 2 }}>
+								<Grid item xs={12} md={6}>
+									<Reveal delay={0.06}>
+										<HoverLift>
+											<Paper sx={{ p: 2 }}>
 									<Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>AI insights & recommendations</Typography>
 									<Divider sx={{ mb: 1 }} />
 									<Box sx={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, overflow: 'hidden' }}>
@@ -679,11 +804,15 @@ function pointForIndex(values: number[], width: number, height: number, padding:
                                                 <Typography variant="caption" color="text.secondary">These are examples. No bank connection required in mock mode.</Typography>
                                             </Stack>
                                         </Box>
-									</Box>
-								</Paper>
+											</Box>
+										</Paper>
+										</HoverLift>
+									</Reveal>
 							</Grid>
-							<Grid item xs={12} md={6}>
-								<Paper sx={{ p: 2 }}>
+								<Grid item xs={12} md={6}>
+									<Reveal delay={0.12}>
+										<HoverLift>
+											<Paper sx={{ p: 2 }}>
 									<Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Budgets & tracking</Typography>
 									<Divider sx={{ mb: 1 }} />
 									<Box sx={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, overflow: 'hidden' }}>
@@ -712,11 +841,15 @@ function pointForIndex(values: number[], width: number, height: number, padding:
                                                 })}
                                             </Stack>
                                         </Box>
-									</Box>
-								</Paper>
+											</Box>
+										</Paper>
+										</HoverLift>
+									</Reveal>
 							</Grid>
-							<Grid item xs={12} md={6}>
-								<Paper sx={{ p: 2 }}>
+								<Grid item xs={12} md={6}>
+									<Reveal delay={0.18}>
+										<HoverLift>
+											<Paper sx={{ p: 2 }}>
 									<Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Stocks simulator</Typography>
 									<Divider sx={{ mb: 1 }} />
 									<Box sx={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, overflow: 'hidden' }}>
@@ -745,9 +878,11 @@ function pointForIndex(values: number[], width: number, height: number, padding:
                                                     )
                                                 })}
                                             </Stack>
-						</Box>
-									</Box>
-								</Paper>
+															</Box>
+											</Box>
+										</Paper>
+										</HoverLift>
+									</Reveal>
 							</Grid>
 						</Grid>
 					</Box>
@@ -757,22 +892,28 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>Why BankOra AI</Typography>
 						<Grid container spacing={2}>
 							<Grid item xs={12} md={4}>
-								<Paper sx={{ p: 3 }}>
+								<Reveal>
+									<Paper sx={{ p: 3 }}>
 									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Privacy-first</Typography>
 									<Typography variant="body2" color="text.secondary">Run in mock mode with no external calls. Your data stays local.</Typography>
-								</Paper>
+									</Paper>
+								</Reveal>
 							</Grid>
 							<Grid item xs={12} md={4}>
-								<Paper sx={{ p: 3 }}>
+								<Reveal delay={0.08}>
+									<Paper sx={{ p: 3 }}>
 									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Actionable insights</Typography>
 									<Typography variant="body2" color="text.secondary">Clear, step-by-step guidance to build savings and reduce debt.</Typography>
-								</Paper>
+									</Paper>
+								</Reveal>
 							</Grid>
 							<Grid item xs={12} md={4}>
-								<Paper sx={{ p: 3 }}>
+								<Reveal delay={0.16}>
+									<Paper sx={{ p: 3 }}>
 									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Developer-friendly</Typography>
 									<Typography variant="body2" color="text.secondary">TypeScript, React, and MUI with clear modules and mocks.</Typography>
-								</Paper>
+									</Paper>
+								</Reveal>
 							</Grid>
 						</Grid>
 					</Box>
@@ -782,22 +923,28 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>Security & Privacy</Typography>
 						<Grid container spacing={2}>
 							<Grid item xs={12} md={4}>
-								<Paper sx={{ p: 3 }}>
+								<Reveal>
+									<Paper sx={{ p: 3 }}>
 									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Local-first mocks</Typography>
 									<Typography variant="body2" color="text.secondary">Evaluate features without bank credentials or network access.</Typography>
-								</Paper>
+									</Paper>
+								</Reveal>
 							</Grid>
 							<Grid item xs={12} md={4}>
-								<Paper sx={{ p: 3 }}>
+								<Reveal delay={0.08}>
+									<Paper sx={{ p: 3 }}>
 									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Configurable</Typography>
 									<Typography variant="body2" color="text.secondary">Switch between demo and live integrations when ready.</Typography>
-								</Paper>
+									</Paper>
+								</Reveal>
 							</Grid>
 							<Grid item xs={12} md={4}>
-								<Paper sx={{ p: 3 }}>
+								<Reveal delay={0.16}>
+									<Paper sx={{ p: 3 }}>
 									<Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Minimal surface</Typography>
 									<Typography variant="body2" color="text.secondary">Only essential endpoints when backend is enabled.</Typography>
-								</Paper>
+									</Paper>
+								</Reveal>
 							</Grid>
 						</Grid>
 					</Box>
@@ -807,18 +954,26 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 						<Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>What people say</Typography>
 						<Grid container spacing={2}>
 							<Grid item xs={12} md={6}>
-								<Paper sx={{ p: 3 }}>
+								<Reveal>
+									<HoverLift>
+										<Paper sx={{ p: 3 }}>
 									<Typography variant="body2">"The insights helped me pay down debt faster while growing savings."</Typography>
 									<Divider sx={{ my: 1 }} />
 									<Typography variant="caption" color="text.secondary">Early user</Typography>
-								</Paper>
+									</Paper>
+									</HoverLift>
+								</Reveal>
 							</Grid>
 							<Grid item xs={12} md={6}>
-								<Paper sx={{ p: 3 }}>
+								<Reveal delay={0.08}>
+									<HoverLift>
+										<Paper sx={{ p: 3 }}>
 									<Typography variant="body2">"I loved trying it without connecting a bank. Super clear and safe."</Typography>
 									<Divider sx={{ my: 1 }} />
 									<Typography variant="caption" color="text.secondary">Beta tester</Typography>
-								</Paper>
+									</Paper>
+									</HoverLift>
+								</Reveal>
 							</Grid>
 						</Grid>
 					</Box>
@@ -826,10 +981,12 @@ function pointForIndex(values: number[], width: number, height: number, padding:
                     {/* Our Team */}
                     <Box sx={{ py: { xs: 4, md: 6 } }} id="team">
                         <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>Our Team</Typography>
-                        <Grid container spacing={2}>
-                            {teamMembers.map(m => (
-                                <Grid item xs={12} md={6} key={m.name}>
-                                    <Paper sx={{ p: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+						<Grid container spacing={2}>
+							{teamMembers.map(m => (
+								<Grid item xs={12} md={6} key={m.name}>
+									<Reveal>
+										<HoverLift>
+											<Paper sx={{ p: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
                                         <Box sx={{ width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', flex: '0 0 auto', border: '1px solid rgba(0,0,0,0.08)' }}>
                                             <img src={m.photo} alt={`${m.name} — ${m.role}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         </Box>
@@ -849,7 +1006,9 @@ function pointForIndex(values: number[], width: number, height: number, padding:
                                                 </Button>
                                             </Stack>
                                         </Box>
-                                    </Paper>
+										</Paper>
+										</HoverLift>
+									</Reveal>
                                 </Grid>
                             ))}
                         </Grid>
@@ -901,7 +1060,9 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 			{tab === 1 && (
 				<Box>
 					<Paper sx={{ p: 3 }} className="glass">
-						<Typography variant="h5" sx={{ fontWeight: 600 }}>Accounts</Typography>
+						<FadeIn>
+							<Typography variant="h5" sx={{ fontWeight: 600 }}>Accounts</Typography>
+						</FadeIn>
 						<Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
 							View your linked data. In Demo mode, mock datasets are shown.
 						</Typography>
@@ -911,41 +1072,51 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 						<Tab label="Loans" />
 						</Tabs>
 					{/* Actions */}
-					<Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ mt: 2 }} alignItems={{ xs: 'stretch', md: 'center' }}>
-						<Stack direction="row" spacing={1.25} alignItems="center">
-							<Button
-								startIcon={<RefreshIcon />}
-								variant="outlined"
-								disabled={refreshing || loading}
-								onClick={handleRefresh}
-							>
-								{refreshing || loading ? (
-									<Stack direction="row" spacing={1} alignItems="center">
-										<CircularProgress size={16} />
-										<Typography variant="body2">Refreshing…</Typography>
-									</Stack>
-								) : 'Refresh'}
-							</Button>
+					<Reveal>
+						<Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ mt: 2 }} alignItems={{ xs: 'stretch', md: 'center' }}>
+							<Stack direction="row" spacing={1.25} alignItems="center">
+								<motion.div whileHover={{ y: -1, scale: 1.02 }} whileTap={{ scale: 0.98 }} style={{ display: 'inline-block' }}>
+									<Button
+										startIcon={<RefreshIcon />}
+										variant="outlined"
+										disabled={refreshing || loading}
+										onClick={handleRefresh}
+									>
+										{refreshing || loading ? (
+											<Stack direction="row" spacing={1} alignItems="center">
+												<CircularProgress size={16} />
+												<Typography variant="body2">Refreshing…</Typography>
+											</Stack>
+										) : 'Refresh'}
+									</Button>
+								</motion.div>
+							</Stack>
+
+							<Box sx={{ flex: 1 }} />
+
+							<motion.div whileHover={{ y: -1, scale: 1.02 }} style={{ display: 'inline-block' }}>
+								<Chip size="small" label={demoMode ? 'Mode: Demo' : 'Mode: Live'} color={demoMode ? 'default' : 'primary'} variant="outlined" />
+							</motion.div>
 						</Stack>
-
-						<Box sx={{ flex: 1 }} />
-
-						<Chip size="small" label={demoMode ? 'Mode: Demo' : 'Mode: Live'} color={demoMode ? 'default' : 'primary'} variant="outlined" />
-					</Stack>
+					</Reveal>
 
 						{/* Summary indicators */}
 						{accountsSubTab === 0 && (
 							(() => {
 								const total = (accounts || []).reduce((s, a) => s + Number(a.balance || 0), 0)
-						return (
-							<Paper sx={{ p: 2, mt: 2 }}>
+								return (
+									<Reveal>
+										<HoverLift>
+											<Paper sx={{ p: 2, mt: 2 }}>
 										<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ xs: 'flex-start', sm: 'center' }}>
 											<Badge color="primary" badgeContent={(accounts || []).length} max={99}>
 												<Chip label="Accounts" variant="outlined" />
 											</Badge>
 								<Chip label={`Total balance: ${total.toLocaleString()} ILS`} color="primary" variant="outlined" />
 										</Stack>
-									</Paper>
+											</Paper>
+										</HoverLift>
+									</Reveal>
 								)
 							})()
 						)}
@@ -973,7 +1144,8 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 				</Box>
             )}
 									{error && <Alert severity="error">{error}</Alert>}
-									{accounts && (
+								{accounts && (
+									<Reveal>
 										<TableContainer component={Paper} className="glass">
 								<Table size={isCompact ? 'small' : 'medium'} sx={{ minWidth: 760 }}>
 												<TableHead>
@@ -989,7 +1161,7 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 												<TableBody>
 													{accounts.map((a, i) => {
 												return (
-													<TableRow key={a.id || i} hover>
+													<TableRow key={a.id || i} hover component={motion.tr} whileHover={{ backgroundColor: 'rgba(11,94,215,0.06)' }} transition={{ duration: 0.15 }}>
 																<TableCell>{a.id || '-'}</TableCell>
 																<TableCell>{a.name || '-'}</TableCell>
 																<TableCell>{a.iban || '-'}</TableCell>
@@ -998,12 +1170,12 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 																<TableCell align="right">
 																	<Stack direction="row" spacing={0.5} justifyContent="flex-end">
 																		<Tooltip title="Copy IBAN">
-																			<IconButton size="small" onClick={() => { if (a.iban) { navigator.clipboard?.writeText(a.iban) } }}>
+																		<IconButton size="small" onClick={() => { if (a.iban) { navigator.clipboard?.writeText(a.iban) } }} component={motion.button} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.95 }}>
 																				<ContentCopyIcon fontSize="inherit" />
 																			</IconButton>
 																		</Tooltip>
 																		<Tooltip title="Quick view">
-																			<IconButton size="small" disabled>
+																		<IconButton size="small" disabled component={motion.button} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
 																				<VisibilityIcon fontSize="inherit" />
 																			</IconButton>
 																		</Tooltip>
@@ -1015,176 +1187,226 @@ function pointForIndex(values: number[], width: number, height: number, padding:
 												</TableBody>
 											</Table>
 										</TableContainer>
+									</Reveal>
 									)}
 								</>
 							)}
 
 							{false}
 
-							{accountsSubTab === 1 && (
-								<>
-                                    {!demoMode && <Alert severity="info">Enable Demo mode in Settings to edit sample savings.</Alert>}
-									{demoMode && (
-                                        <Stack spacing={2}>
-                                            <Paper sx={{ p: 2 }}>
-                                                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', md: 'center' }}>
-                                                    <TextField label="Name" value={newSaving.name || ''} onChange={e => setNewSaving(v => ({ ...v, name: e.target.value }))} sx={{ flex: 2 }} />
-                                                    <TextField label="Balance" type="number" value={newSaving.balance ?? ''} onChange={e => setNewSaving(v => ({ ...v, balance: Number(e.target.value) }))} />
-                                                    <TextField label="Rate (APR %)" type="number" value={newSaving.rate ?? ''} onChange={e => setNewSaving(v => ({ ...v, rate: Number(e.target.value) }))} />
-                                                    <TextField label="Currency" value={newSaving.currency || 'ILS'} onChange={e => setNewSaving(v => ({ ...v, currency: e.target.value }))} />
-                                                    <TextField select label="Account" value={newSaving.accountId || ''} onChange={e => setNewSaving(v => ({ ...v, accountId: e.target.value }))} sx={{ minWidth: 160 }}>
-                                                        <MenuItem value="">Unassigned</MenuItem>
-                                                        {(accounts || []).map(a => (
-                                                            <MenuItem key={a.id} value={a.id}>{a.id} — {a.name}</MenuItem>
-                                                        ))}
-                                                    </TextField>
-                                                    <Button variant="contained" onClick={() => {
-                                                        const name = (newSaving.name || '').trim()
-                                                        const balance = Number(newSaving.balance || 0)
-                                                        const rate = Number(newSaving.rate || 0)
-                                                        const currency = (newSaving.currency || 'ILS').trim()
-                                                        if (!name || balance < 0) return
-                                                        setDemoSavings(prev => [...prev, { id: crypto.randomUUID(), name, balance, rate, currency, accountId: newSaving.accountId || '' }])
-                                                        setNewSaving({ name: '', balance: 0, rate: 0.5, currency: 'ILS', accountId: '' })
-                                                    }}>Add</Button>
-                                                </Stack>
-                                            </Paper>
-										<TableContainer component={Paper} className="glass">
-                                                <Table size="small" sx={{ minWidth: 760 }}>
-												<TableHead>
-													<TableRow>
-                                                            <TableCell style={{ width: 140 }}>ID</TableCell>
-														<TableCell>Name</TableCell>
-														<TableCell align="right">Balance</TableCell>
-                                                            <TableCell align="right">Rate %</TableCell>
-														<TableCell>Currency</TableCell>
-                                                            <TableCell>Account</TableCell>
-                                                            <TableCell align="right">Actions</TableCell>
-													</TableRow>
-												</TableHead>
-												<TableBody>
-                                                        {demoSavings.map((s) => (
-														<TableRow key={s.id} hover>
-															<TableCell>{s.id}</TableCell>
-                                                                <TableCell>
-                                                                    <TextField size="small" value={s.name} onChange={e => setDemoSavings(prev => prev.map(x => x.id === s.id ? { ...x, name: e.target.value } : x))} />
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    <TextField size="small" type="number" value={s.balance} onChange={e => setDemoSavings(prev => prev.map(x => x.id === s.id ? { ...x, balance: Number(e.target.value) } : x))} />
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    <TextField size="small" type="number" value={s.rate} onChange={e => setDemoSavings(prev => prev.map(x => x.id === s.id ? { ...x, rate: Number(e.target.value) } : x))} />
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <TextField size="small" value={s.currency} onChange={e => setDemoSavings(prev => prev.map(x => x.id === s.id ? { ...x, currency: e.target.value } : x))} />
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <TextField select size="small" value={s.accountId || ''} onChange={e => setDemoSavings(prev => prev.map(x => x.id === s.id ? { ...x, accountId: e.target.value } : x))} sx={{ minWidth: 160 }}>
-                                                                        <MenuItem value="">Unassigned</MenuItem>
-                                                                        {(accounts || []).map(a => (
-                                                                            <MenuItem key={a.id} value={a.id}>{a.id} — {a.name}</MenuItem>
-                                                                        ))}
-                                                                    </TextField>
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    <Button size="small" color="error" onClick={() => setDemoSavings(prev => prev.filter(x => x.id !== s.id))}>Delete</Button>
-                                                                </TableCell>
-														</TableRow>
-													))}
-												</TableBody>
-											</Table>
-										</TableContainer>
-                                        </Stack>
-									)}
-								</>
-							)}
+						{accountsSubTab === 1 && (
+							<>
+								{!demoMode && <Alert severity="info">Enable Demo mode in Settings to edit sample savings.</Alert>}
+								{demoMode && (
+									<Stack spacing={2}>
+										{(() => {
+											const total = demoSavings.reduce((s, x) => s + (x.balance || 0), 0)
+											const avg = demoSavings.length ? demoSavings.reduce((s, x) => s + (x.rate || 0), 0) / demoSavings.length : 0
+											return (
+												<Reveal>
+													<HoverLift>
+														<Paper sx={{ p: 2 }}>
+															<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'stretch', sm: 'center' }}>
+																<Chip size="small" color="primary" label={`Total savings: ${Math.round(total).toLocaleString()} ILS`} />
+																<Chip size="small" label={`Avg APR: ${avg.toFixed(2)}%`} />
+															</Stack>
+														</Paper>
+													</HoverLift>
+												</Reveal>
+										)
+										})()}
+
+										<Grid container spacing={2}>
+											<Grid item xs={12} md={4}>
+												<Reveal>
+													<HoverLift>
+														<Paper sx={{ p: 2, height: '100%' }}>
+															<Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Create Savings</Typography>
+															<Stack spacing={1.25} sx={{ mt: 1 }}>
+																<TextField label="Name" value={newSaving.name || ''} onChange={e => setNewSaving(v => ({ ...v, name: e.target.value }))} />
+																<TextField label="Balance" type="number" value={newSaving.balance ?? ''} onChange={e => setNewSaving(v => ({ ...v, balance: Number(e.target.value) }))} />
+																<TextField label="Rate (APR %)" type="number" value={newSaving.rate ?? ''} onChange={e => setNewSaving(v => ({ ...v, rate: Number(e.target.value) }))} />
+																<TextField label="Currency" value={newSaving.currency || 'ILS'} onChange={e => setNewSaving(v => ({ ...v, currency: e.target.value }))} />
+																<TextField select label="Account" value={newSaving.accountId || ''} onChange={e => setNewSaving(v => ({ ...v, accountId: e.target.value }))} sx={{ minWidth: 160 }}>
+																	<MenuItem value="">Unassigned</MenuItem>
+																	{(accounts || []).map(a => (
+																		<MenuItem key={a.id} value={a.id}>{a.id} — {a.name}</MenuItem>
+																	))}
+																</TextField>
+																<Button component={motion.button} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} variant="contained" onClick={() => {
+																	const name = (newSaving.name || '').trim()
+																	const balance = Number(newSaving.balance || 0)
+																	const rate = Number(newSaving.rate || 0)
+																	const currency = (newSaving.currency || 'ILS').trim()
+																	if (!name || balance < 0) return
+																	setDemoSavings(prev => [...prev, { id: crypto.randomUUID(), name, balance, rate, currency, accountId: newSaving.accountId || '' }])
+																	setNewSaving({ name: '', balance: 0, rate: 0.5, currency: 'ILS', accountId: '' })
+																}}>Add</Button>
+															</Stack>
+														</Paper>
+													</HoverLift>
+												</Reveal>
+											</Grid>
+											<Grid item xs={12} md={8}>
+												<Reveal>
+													<Grid container spacing={2}>
+														{demoSavings.length === 0 && (
+															<Grid item xs={12}>
+																<HoverLift>
+																	<Paper sx={{ p: 2 }}>
+																		<Typography variant="body2" color="text.secondary">No savings yet. Create one on the left.</Typography>
+																	</Paper>
+																</HoverLift>
+															</Grid>
+														)}
+														{demoSavings.map((s) => (
+															<Grid item xs={12} sm={6} key={s.id}>
+																<HoverLift>
+																	<Paper sx={{ p: 2, height: '100%' }}>
+																		<Stack spacing={1}>
+																			<Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{s.name || 'Unnamed'}</Typography>
+																			<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+																				<TextField size="small" type="number" label="Balance" value={s.balance} onChange={e => setDemoSavings(prev => prev.map(x => x.id === s.id ? { ...x, balance: Number(e.target.value) } : x))} />
+																				<TextField size="small" label="Name" value={s.name} onChange={e => setDemoSavings(prev => prev.map(x => x.id === s.id ? { ...x, name: e.target.value } : x))} />
+																			</Stack>
+																			<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+																				<TextField size="small" type="number" label="Rate %" value={s.rate} onChange={e => setDemoSavings(prev => prev.map(x => x.id === s.id ? { ...x, rate: Number(e.target.value) } : x))} />
+																				<TextField size="small" label="Currency" value={s.currency} onChange={e => setDemoSavings(prev => prev.map(x => x.id === s.id ? { ...x, currency: e.target.value } : x))} />
+																			</Stack>
+																			<TextField select size="small" label="Account" value={s.accountId || ''} onChange={e => setDemoSavings(prev => prev.map(x => x.id === s.id ? { ...x, accountId: e.target.value } : x))} sx={{ minWidth: 160 }}>
+																				<MenuItem value="">Unassigned</MenuItem>
+																				{(accounts || []).map(a => (
+																					<MenuItem key={a.id} value={a.id}>{a.id} — {a.name}</MenuItem>
+																				))}
+																			</TextField>
+																			<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
+																				<Chip size="small" label={s.id} variant="outlined" />
+																				<Button size="small" color="error" component={motion.button} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setDemoSavings(prev => prev.filter(x => x.id !== s.id))}>Delete</Button>
+																			</Stack>
+																		</Stack>
+																	</Paper>
+																</HoverLift>
+															</Grid>
+														))}
+													</Grid>
+												</Reveal>
+											</Grid>
+										</Grid>
+									</Stack>
+								)}
+							</>
+						)}
 
 							{accountsSubTab === 2 && (
 								<>
                                     {!demoMode && <Alert severity="info">Enable Demo mode in Settings to edit sample loans.</Alert>}
 									{demoMode && (
-                                        <Stack spacing={2}>
-                                            <Paper sx={{ p: 2 }}>
-                                                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', md: 'center' }}>
-                                                    <TextField label="Name" value={newLoan.name || ''} onChange={e => setNewLoan(v => ({ ...v, name: e.target.value }))} sx={{ flex: 2 }} />
-                                                    <TextField label="Principal" type="number" value={newLoan.principal ?? ''} onChange={e => setNewLoan(v => ({ ...v, principal: Number(e.target.value) }))} />
-                                                    <TextField label="Outstanding" type="number" value={newLoan.outstanding ?? ''} onChange={e => setNewLoan(v => ({ ...v, outstanding: Number(e.target.value) }))} />
-                                                    <TextField label="Payment/mo" type="number" value={newLoan.payment ?? ''} onChange={e => setNewLoan(v => ({ ...v, payment: Number(e.target.value) }))} />
-                                                    <TextField label="Rate (APR %)" type="number" value={newLoan.rate ?? ''} onChange={e => setNewLoan(v => ({ ...v, rate: Number(e.target.value) }))} />
-                                                    <TextField label="Currency" value={newLoan.currency || 'ILS'} onChange={e => setNewLoan(v => ({ ...v, currency: e.target.value }))} />
-                                                    <TextField select label="Account" value={newLoan.accountId || ''} onChange={e => setNewLoan(v => ({ ...v, accountId: e.target.value }))} sx={{ minWidth: 160 }}>
-                                                        <MenuItem value="">Unassigned</MenuItem>
-                                                        {(accounts || []).map(a => (
-                                                            <MenuItem key={a.id} value={a.id}>{a.id} — {a.name}</MenuItem>
-                                                        ))}
-                                                    </TextField>
-                                                    <Button variant="contained" onClick={() => {
-                                                        const name = (newLoan.name || '').trim()
-                                                        const principal = Number(newLoan.principal || 0)
-                                                        const outstanding = Number(newLoan.outstanding || 0)
-                                                        const payment = Number(newLoan.payment || 0)
-                                                        const rate = Number(newLoan.rate || 0)
-                                                        const currency = (newLoan.currency || 'ILS').trim()
-                                                        if (!name || principal < 0 || outstanding < 0 || payment < 0) return
-                                                        setDemoLoans(prev => [...prev, { id: crypto.randomUUID(), name, principal, outstanding, payment, rate, currency, accountId: newLoan.accountId || '' }])
-                                                        setNewLoan({ name: '', principal: 0, outstanding: 0, payment: 0, rate: 2.5, currency: 'ILS', accountId: '' })
-                                                    }}>Add</Button>
-                                                </Stack>
-                                            </Paper>
-										<TableContainer component={Paper} className="glass">
-                                                <Table size="small" sx={{ minWidth: 900 }}>
-												<TableHead>
-													<TableRow>
-                                                            <TableCell style={{ width: 140 }}>ID</TableCell>
-														<TableCell>Name</TableCell>
-														<TableCell align="right">Principal</TableCell>
-														<TableCell align="right">Outstanding</TableCell>
-														<TableCell align="right">Payment/mo</TableCell>
-                                                            <TableCell align="right">Rate %</TableCell>
-														<TableCell>Currency</TableCell>
-                                                            <TableCell>Account</TableCell>
-                                                            <TableCell align="right">Actions</TableCell>
-													</TableRow>
-												</TableHead>
-												<TableBody>
-                                                        {demoLoans.map((l) => (
-														<TableRow key={l.id} hover>
-															<TableCell>{l.id}</TableCell>
-                                                                <TableCell>
-                                                                    <TextField size="small" value={l.name} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, name: e.target.value } : x))} />
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    <TextField size="small" type="number" value={l.principal} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, principal: Number(e.target.value) } : x))} />
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    <TextField size="small" type="number" value={l.outstanding} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, outstanding: Number(e.target.value) } : x))} />
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    <TextField size="small" type="number" value={l.payment} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, payment: Number(e.target.value) } : x))} />
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    <TextField size="small" type="number" value={l.rate} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, rate: Number(e.target.value) } : x))} />
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <TextField size="small" value={l.currency} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, currency: e.target.value } : x))} />
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <TextField select size="small" value={l.accountId || ''} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, accountId: e.target.value } : x))} sx={{ minWidth: 160 }}>
-                                                                        <MenuItem value="">Unassigned</MenuItem>
-                                                                        {(accounts || []).map(a => (
-                                                                            <MenuItem key={a.id} value={a.id}>{a.id} — {a.name}</MenuItem>
-                                                                        ))}
-                                                                    </TextField>
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    <Button size="small" color="error" onClick={() => setDemoLoans(prev => prev.filter(x => x.id !== l.id))}>Delete</Button>
-                                                                </TableCell>
-														</TableRow>
-													))}
-												</TableBody>
-											</Table>
-										</TableContainer>
-                                        </Stack>
+																<Stack spacing={2}>
+																	{(() => {
+																		const total = demoLoans.reduce((s, l) => s + (l.outstanding || 0), 0)
+																		const weighted = demoLoans.reduce((s, l) => s + (l.rate || 0) * (l.outstanding || 0), 0)
+																		const avg = total > 0 ? weighted / total : 0
+																		const monthly = demoLoans.reduce((s, l) => s + (l.payment || 0), 0)
+																		return (
+																			<Reveal>
+																				<HoverLift>
+																					<Paper sx={{ p: 2 }}>
+																						<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'stretch', sm: 'center' }}>
+																							<Chip size="small" color="error" label={`Total outstanding: ${Math.round(total).toLocaleString()} ILS`} />
+																							<Chip size="small" label={`Avg APR: ${avg.toFixed(2)}%`} />
+																							<Chip size="small" label={`Monthly payments: ${Math.round(monthly).toLocaleString()} ILS`} />
+																						</Stack>
+																				</Paper>
+																			</HoverLift>
+																		</Reveal>
+																	)
+																})()}
+
+																	<Grid container spacing={2}>
+																		<Grid item xs={12} md={4}>
+																			<Reveal>
+																				<HoverLift>
+																					<Paper sx={{ p: 2, height: '100%' }}>
+																						<Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Create Loan</Typography>
+																						<Stack spacing={1.25} sx={{ mt: 1 }}>
+																							<TextField label="Name" value={newLoan.name || ''} onChange={e => setNewLoan(v => ({ ...v, name: e.target.value }))} />
+																							<TextField label="Principal" type="number" value={newLoan.principal ?? ''} onChange={e => setNewLoan(v => ({ ...v, principal: Number(e.target.value) }))} />
+																							<TextField label="Outstanding" type="number" value={newLoan.outstanding ?? ''} onChange={e => setNewLoan(v => ({ ...v, outstanding: Number(e.target.value) }))} />
+																							<TextField label="Payment/mo" type="number" value={newLoan.payment ?? ''} onChange={e => setNewLoan(v => ({ ...v, payment: Number(e.target.value) }))} />
+																							<TextField label="Rate (APR %)" type="number" value={newLoan.rate ?? ''} onChange={e => setNewLoan(v => ({ ...v, rate: Number(e.target.value) }))} />
+																							<TextField label="Currency" value={newLoan.currency || 'ILS'} onChange={e => setNewLoan(v => ({ ...v, currency: e.target.value }))} />
+																							<TextField select label="Account" value={newLoan.accountId || ''} onChange={e => setNewLoan(v => ({ ...v, accountId: e.target.value }))} sx={{ minWidth: 160 }}>
+																							<MenuItem value="">Unassigned</MenuItem>
+																							{(accounts || []).map(a => (
+																								<MenuItem key={a.id} value={a.id}>{a.id} — {a.name}</MenuItem>
+																							))}
+																							</TextField>
+																							<Button component={motion.button} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} variant="contained" onClick={() => {
+																								const name = (newLoan.name || '').trim()
+																								const principal = Number(newLoan.principal || 0)
+																								const outstanding = Number(newLoan.outstanding || 0)
+																								const payment = Number(newLoan.payment || 0)
+																								const rate = Number(newLoan.rate || 0)
+																								const currency = (newLoan.currency || 'ILS').trim()
+																								if (!name || principal < 0 || outstanding < 0 || payment < 0) return
+																								setDemoLoans(prev => [...prev, { id: crypto.randomUUID(), name, principal, outstanding, payment, rate, currency, accountId: newLoan.accountId || '' }])
+																								setNewLoan({ name: '', principal: 0, outstanding: 0, payment: 0, rate: 2.5, currency: 'ILS', accountId: '' })
+																							}}>Add</Button>
+																						</Stack>
+																					</Paper>
+																			</HoverLift>
+																		</Reveal>
+																	</Grid>
+																	<Grid item xs={12} md={8}>
+																		<Reveal>
+																			<Grid container spacing={2}>
+																				{demoLoans.length === 0 && (
+																					<Grid item xs={12}>
+																						<HoverLift>
+																							<Paper sx={{ p: 2 }}>
+																								<Typography variant="body2" color="text.secondary">No loans yet. Create one on the left.</Typography>
+																							</Paper>
+																						</HoverLift>
+																					</Grid>
+																				)}
+																				{demoLoans.map((l) => (
+																					<Grid item xs={12} sm={6} key={l.id}>
+																						<HoverLift>
+																							<Paper sx={{ p: 2, height: '100%' }}>
+																								<Stack spacing={1}>
+																									<Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{l.name || 'Unnamed'}</Typography>
+																									<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+																										<TextField size="small" label="Name" value={l.name} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, name: e.target.value } : x))} />
+																										<TextField size="small" type="number" label="Principal" value={l.principal} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, principal: Number(e.target.value) } : x))} />
+																									</Stack>
+																									<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+																										<TextField size="small" type="number" label="Outstanding" value={l.outstanding} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, outstanding: Number(e.target.value) } : x))} />
+																										<TextField size="small" type="number" label="Payment/mo" value={l.payment} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, payment: Number(e.target.value) } : x))} />
+																									</Stack>
+																									<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+																										<TextField size="small" type="number" label="Rate %" value={l.rate} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, rate: Number(e.target.value) } : x))} />
+																										<TextField size="small" label="Currency" value={l.currency} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, currency: e.target.value } : x))} />
+																									</Stack>
+																									<TextField select size="small" label="Account" value={l.accountId || ''} onChange={e => setDemoLoans(prev => prev.map(x => x.id === l.id ? { ...x, accountId: e.target.value } : x))} sx={{ minWidth: 160 }}>
+																									<MenuItem value="">Unassigned</MenuItem>
+																									{(accounts || []).map(a => (
+																										<MenuItem key={a.id} value={a.id}>{a.id} — {a.name}</MenuItem>
+																									))}
+																								</TextField>
+																								<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
+																									<Chip size="small" label={l.id} variant="outlined" />
+																									<Button size="small" color="error" component={motion.button} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setDemoLoans(prev => prev.filter(x => x.id !== l.id))}>Delete</Button>
+																								</Stack>
+																							</Stack>
+																						</Paper>
+																					</HoverLift>
+																			</Grid>
+																		))}
+																	</Grid>
+																	</Reveal>
+																</Grid>
+															</Grid>
+														</Stack>
 									)}
 								</>
 							)}

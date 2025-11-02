@@ -127,6 +127,23 @@ export const theme = createTheme({
 export function AppGlobalStyles() {
   return (
     <GlobalStyles styles={{
+      '@keyframes backgroundDrift': {
+        '0%': { transform: 'translate3d(0,0,0) scale(1)' },
+        '50%': { transform: 'translate3d(-1.5%, -1.5%, 0) scale(1.02)' },
+        '100%': { transform: 'translate3d(0,0,0) scale(1)' }
+      },
+      'body::after': {
+        content: '""',
+        position: 'fixed',
+        inset: -200,
+        zIndex: -1,
+        pointerEvents: 'none',
+        backgroundImage:
+          `radial-gradient(600px 600px at 20% 10%, ${alpha('#93C5FD', 0.16)} 0%, transparent 55%),
+           radial-gradient(700px 700px at 80% 0%, ${alpha('#A5B4FC', 0.14)} 0%, transparent 55%),
+           radial-gradient(800px 800px at 50% 100%, ${alpha('#86EFAC', 0.10)} 0%, transparent 60%)`,
+        animation: 'backgroundDrift 24s ease-in-out infinite'
+      },
       '.glass': {
         background: 'linear-gradient(180deg, rgba(255,255,255,0.86), rgba(255,255,255,0.96))',
         border: `1px solid ${alpha('#0F172A', 0.06)}`,
