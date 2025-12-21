@@ -1,25 +1,27 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter
 
-from .config import settings
-from .routers import auth, accounts
-
-app = FastAPI(title="OpenBank AI Backend")
-
-# CORS
-app.add_middleware(
-	CORSMiddleware,
-	allow_origins=[settings.frontend_url],
-	allow_credentials=True,
-	allow_methods=["*"],
-	allow_headers=["*"],
-)
-
-# Routers
-app.include_router(auth.router, prefix="/api", tags=["auth"])
-app.include_router(accounts.router, prefix="/api", tags=["accounts"])
+from .bootstrap import bootstrap_app
+from .middleware.request_logging import RequestLoggingMiddleware
+from .api.routes.health import router as health_router
+from .api.routes.profiles import router as profiles_router
+from .api.routes.plans import router as plans_router
+from .api.routes.settings import router as settings_router
+from .api.routes.tasks import router as tasks_router
+from .api.routes.checkins import router as checkins_router
+from .api.routes.push import router as push_router
 
 
-@app.get("/health")
-async def health() -> dict:
-	return {"status": "ok"}
+app = bootstrap_app()
+app.add_middleware(RequestLoggingMiddleware)
+
+api = APIRouter(prefix="/api")
+api.include_router(health_router)
+api.include_router(profiles_router)
+api.include_router(plans_router)
+api.include_router(settings_router)
+api.include_router(tasks_router)
+api.include_router(checkins_router)
+api.include_router(push_router)
+app.include_router(api)
+
+
